@@ -50,6 +50,7 @@ const EnhancedInterview: React.FC<EnhancedInterviewProps> = ({ onComplete, initi
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [isVoiceModeEnabled, setIsVoiceModeEnabled] = useState(false);
   const [showVoiceChat, setShowVoiceChat] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const questions = [
     {
@@ -418,11 +419,11 @@ const EnhancedInterview: React.FC<EnhancedInterviewProps> = ({ onComplete, initi
 
             <Button
               onClick={handleNext}
-              disabled={isEnhancing}
+              disabled={isEnhancing || isLoading}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2"
             >
               {currentQuestionIndex === questions.length - 1 ? (
-                "Complete Interview"
+                isLoading ? "Processing..." : "Complete Interview"
               ) : (
                 <>
                   Next
