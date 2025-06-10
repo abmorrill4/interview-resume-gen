@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Sparkles, Users } from "lucide-react";
-import Interview from "@/components/Interview";
-import Resume from "@/components/Resume";
+import { FileText, Sparkles, Users, Mic, Brain, Zap } from "lucide-react";
+import EnhancedInterview from "@/components/EnhancedInterview";
+import RealtimeResume from "@/components/RealtimeResume";
 
 type AppState = 'welcome' | 'interview' | 'resume';
 
@@ -68,11 +68,11 @@ const Index = () => {
   };
 
   if (currentState === 'interview') {
-    return <Interview onComplete={handleInterviewComplete} initialData={userData} />;
+    return <EnhancedInterview onComplete={handleInterviewComplete} initialData={userData} />;
   }
 
   if (currentState === 'resume') {
-    return <Resume userData={userData} onStartOver={handleStartOver} />;
+    return <RealtimeResume userData={userData} onStartOver={handleStartOver} />;
   }
 
   return (
@@ -85,25 +85,26 @@ const Index = () => {
             </div>
           </div>
           <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
-            AI Resume Creator
+            Enhanced AI Resume Creator
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Let our AI interview you and create a professional, polished resume in minutes. 
-            No more staring at blank templates or struggling with formatting.
+            Experience the future of resume creation with AI-powered enhancement, real-time updates, 
+            and interactive voice assistance. Create professional resumes that stand out.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6 mb-8 max-w-6xl mx-auto">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="text-center pb-4">
               <div className="bg-blue-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Users className="h-6 w-6 text-blue-600" />
+                <Brain className="h-6 w-6 text-blue-600" />
               </div>
-              <CardTitle className="text-lg">AI Interview</CardTitle>
+              <CardTitle className="text-lg">AI-Enhanced Interview</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Our AI conducts a personalized interview, asking the right questions to understand your unique background and experience.
+                Our advanced AI conducts personalized interviews with real-time content enhancement 
+                and intelligent suggestions to bring out your best qualities.
               </CardDescription>
             </CardContent>
           </Card>
@@ -111,13 +112,14 @@ const Index = () => {
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="text-center pb-4">
               <div className="bg-indigo-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Sparkles className="h-6 w-6 text-indigo-600" />
+                <Zap className="h-6 w-6 text-indigo-600" />
               </div>
-              <CardTitle className="text-lg">Smart Enhancement</CardTitle>
+              <CardTitle className="text-lg">Real-Time Enhancement</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Your responses are intelligently enhanced and refined to create compelling, professional content that stands out.
+                Watch your resume improve instantly with AI-powered content enhancement, 
+                live preview updates, and smart formatting suggestions.
               </CardDescription>
             </CardContent>
           </Card>
@@ -125,13 +127,61 @@ const Index = () => {
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="text-center pb-4">
               <div className="bg-purple-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <FileText className="h-6 w-6 text-purple-600" />
+                <Mic className="h-6 w-6 text-purple-600" />
+              </div>
+              <CardTitle className="text-lg">Voice Assistance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-center">
+                Get personalized career advice through our interactive voice chat system 
+                and text-to-speech capabilities for a truly hands-free experience.
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-6xl mx-auto">
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <CardHeader className="text-center pb-4">
+              <div className="bg-green-100 rounded-full p-3 w-fit mx-auto mb-4">
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+              <CardTitle className="text-lg">Interactive Guidance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-center">
+                Get instant help and career advice through our AI assistant chat feature 
+                available throughout the interview process.
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <CardHeader className="text-center pb-4">
+              <div className="bg-orange-100 rounded-full p-3 w-fit mx-auto mb-4">
+                <Sparkles className="h-6 w-6 text-orange-600" />
+              </div>
+              <CardTitle className="text-lg">Smart Content</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-center">
+                Every section of your resume is intelligently enhanced with industry-specific 
+                terminology and achievement-focused language.
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <CardHeader className="text-center pb-4">
+              <div className="bg-teal-100 rounded-full p-3 w-fit mx-auto mb-4">
+                <FileText className="h-6 w-6 text-teal-600" />
               </div>
               <CardTitle className="text-lg">Perfect Format</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Get a beautifully formatted markdown resume that's compatible with any platform and ready to share with employers.
+                Get beautifully formatted markdown resumes with live preview, 
+                real-time updates, and professional styling that works everywhere.
               </CardDescription>
             </CardContent>
           </Card>
@@ -143,10 +193,10 @@ const Index = () => {
             size="lg" 
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
           >
-            Start AI Interview
+            Start Enhanced AI Interview
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
-            Takes about 5-10 minutes • Completely free • No registration required
+            Experience the future of resume creation • AI-powered • Voice-enabled • Real-time updates
           </p>
         </div>
       </div>
