@@ -1,8 +1,10 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Sparkles, Users, Mic, Brain, Zap } from "lucide-react";
+import { FileText, Sparkles, Users, Mic, Brain, Zap, LogOut, User as UserIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useResumeStorage } from "@/hooks/useResumeStorage";
 import EnhancedInterview from "@/components/EnhancedInterview";
 import RealtimeResume from "@/components/RealtimeResume";
 
@@ -33,6 +35,9 @@ interface UserData {
 }
 
 const Index = () => {
+  const { user, signOut, loading } = useAuth();
+  const navigate = useNavigate();
+  const { saveResume } = useResumeStorage();
   const [currentState, setCurrentState] = useState<AppState>('welcome');
   const [userData, setUserData] = useState<UserData>({
     personalInfo: {
@@ -47,12 +52,22 @@ const Index = () => {
     achievements: []
   });
 
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
   const handleStartInterview = () => {
     setCurrentState('interview');
   };
 
-  const handleInterviewComplete = (data: UserData) => {
+  const handleInterviewComplete = async (data: UserData) => {
     setUserData(data);
+    
+    // Save resume to database
+    await saveResume(data);
+    
     setCurrentState('resume');
   };
 
@@ -67,6 +82,26 @@ const Index = () => {
     });
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to auth page via useEffect
+  }
+
   if (currentState === 'interview') {
     return <EnhancedInterview onComplete={handleInterviewComplete} initialData={userData} />;
   }
@@ -78,6 +113,25 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="container mx-auto px-4 py-12">
+        {/* Header with user info and sign out */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center gap-2">
+            <UserIcon className="h-5 w-5 text-blue-600" />
+            <span className="text-sm text-muted-foreground">
+              Welcome, {user.email}
+            </span>
+          </div>
+          <Button
+            onClick={handleSignOut}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
+
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-4">

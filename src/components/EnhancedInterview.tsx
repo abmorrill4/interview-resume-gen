@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEnhancedInterview } from "@/hooks/useEnhancedInterview";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UserData {
   personalInfo: {
@@ -41,6 +42,7 @@ interface EnhancedInterviewProps {
 
 const EnhancedInterview: React.FC<EnhancedInterviewProps> = ({ onComplete, initialData }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { enhanceContent, isEnhancing } = useEnhancedInterview();
   const { messages, sendMessage, isLoading: isChatLoading, clearMessages } = useVoiceChat();
   const { speak, isPlaying, stop } = useTextToSpeech();
@@ -51,6 +53,23 @@ const EnhancedInterview: React.FC<EnhancedInterviewProps> = ({ onComplete, initi
   const [isVoiceModeEnabled, setIsVoiceModeEnabled] = useState(false);
   const [showVoiceChat, setShowVoiceChat] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [interviewTranscript, setInterviewTranscript] = useState<Array<{
+    question: string;
+    answer: string;
+    timestamp: string;
+  }>>([]);
+
+  // Pre-fill personal info from user profile if available
+  useEffect(() => {
+    if (user && currentQuestionIndex === 0 && !answers.fullName) {
+      // Pre-fill from user data if available
+      const userEmail = user.email || '';
+      setAnswers(prev => ({
+        ...prev,
+        email: userEmail
+      }));
+    }
+  }, [user, currentQuestionIndex, answers.fullName]);
 
   const questions = [
     {
@@ -160,6 +179,13 @@ const EnhancedInterview: React.FC<EnhancedInterviewProps> = ({ onComplete, initi
       return;
     }
 
+    // Add to transcript
+    setInterviewTranscript(prev => [...prev, {
+      question: currentQuestion.text,
+      answer: currentAnswer,
+      timestamp: new Date().toISOString()
+    }]);
+
     setAnswers(prev => ({
       ...prev,
       [currentQuestion.id]: currentAnswer
@@ -189,7 +215,7 @@ const EnhancedInterview: React.FC<EnhancedInterviewProps> = ({ onComplete, initi
       const processedData: UserData = {
         personalInfo: {
           fullName: answers.fullName || '',
-          email: answers.email || '',
+          email: answers.email || user?.email || '',
           phone: answers.phone || '',
           linkedin: answers.linkedin || ''
         },
