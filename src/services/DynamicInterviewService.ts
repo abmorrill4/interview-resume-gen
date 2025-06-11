@@ -1,7 +1,8 @@
+
 import { DynamicQuestion, InterviewResponse, UserProfile } from '@/types/InterviewTypes';
 
 export class DynamicInterviewService {
-  private static getBaseQuestions(): DynamicQuestion[] {
+  public static getBaseQuestions(): DynamicQuestion[] {
     return [
       {
         id: 'career_stage',

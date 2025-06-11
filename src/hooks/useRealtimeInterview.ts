@@ -20,6 +20,7 @@ interface UseRealtimeInterviewReturn {
   messages: Message[];
   connect: () => Promise<void>;
   disconnect: () => void;
+  sendMessage: (message: string) => void;
   togglePause: () => void;
   toggleMute: () => void;
   repeatLastQuestion: () => void;
@@ -334,6 +335,33 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
     setError(null);
   }, []);
 
+  const sendMessage = useCallback((message: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.warn('WebSocket not connected, cannot send message');
+      return;
+    }
+    
+    console.log('Sending message to AI:', message);
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [
+          {
+            type: 'input_text',
+            text: message
+          }
+        ]
+      }
+    }));
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'response.create'
+    }));
+  }, []);
+
   useEffect(() => {
     return () => {
       disconnect();
@@ -350,6 +378,7 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
     messages,
     connect,
     disconnect,
+    sendMessage,
     togglePause,
     toggleMute,
     repeatLastQuestion,
