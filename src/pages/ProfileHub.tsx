@@ -47,12 +47,12 @@ const ProfileHub: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+            <h1 className="text-4xl font-bold text-foreground mb-4">
               Profile Hub
             </h1>
             <p className="text-xl text-muted-foreground mb-6">
@@ -60,7 +60,7 @@ const ProfileHub: React.FC = () => {
             </p>
             
             {/* Profile Completeness */}
-            <Card className="border-0 shadow-lg mb-6">
+            <Card className="border shadow-lg mb-6">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Profile Completeness</h3>
@@ -71,27 +71,27 @@ const ProfileHub: React.FC = () => {
                 <Progress value={calculateCompleteness()} className="h-3 mb-4" />
                 <div className="grid grid-cols-5 gap-4">
                   <div className="text-center">
-                    <Briefcase className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                    <Briefcase className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <p className="font-medium">{profileStats?.experienceCount || 0}</p>
                     <p className="text-sm text-muted-foreground">Experiences</p>
                   </div>
                   <div className="text-center">
-                    <Code className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                    <Code className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <p className="font-medium">{profileStats?.skillsCount || 0}</p>
                     <p className="text-sm text-muted-foreground">Skills</p>
                   </div>
                   <div className="text-center">
-                    <GraduationCap className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+                    <GraduationCap className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <p className="font-medium">{profileStats?.educationCount || 0}</p>
                     <p className="text-sm text-muted-foreground">Education</p>
                   </div>
                   <div className="text-center">
-                    <User className="h-8 w-8 mx-auto mb-2 text-orange-600" />
+                    <User className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <p className="font-medium">{profileStats?.projectsCount || 0}</p>
                     <p className="text-sm text-muted-foreground">Projects</p>
                   </div>
                   <div className="text-center">
-                    <Award className="h-8 w-8 mx-auto mb-2 text-red-600" />
+                    <Award className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <p className="font-medium">{profileStats?.achievementsCount || 0}</p>
                     <p className="text-sm text-muted-foreground">Achievements</p>
                   </div>
