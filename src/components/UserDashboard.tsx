@@ -9,6 +9,9 @@ import { useDocumentUpload } from "@/hooks/useDocumentUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import WelcomeOnboarding from "./WelcomeOnboarding";
+import UserProfileSummary from "./UserProfileSummary";
+import InterviewProgress from "./InterviewProgress";
+import CareerInsights from "./CareerInsights";
 
 const UserDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -74,9 +77,9 @@ const UserDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Welcome Section */}
-          <div className="mb-12 text-center">
+          <div className="mb-8 text-center">
             <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-6">
               <Zap className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-primary">Ready to Start</span>
@@ -89,31 +92,48 @@ const UserDashboard: React.FC = () => {
             </p>
           </div>
 
-          {/* System Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            {systemStats.map((stat, index) => (
-              <Card key={stat.label} className="bg-card border border-border hover:border-primary/20 transition-colors">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
-                      <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                      <p className="text-sm text-green-400 flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        {stat.trend}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-primary/10 rounded-lg">
-                      <stat.icon className="h-6 w-6 text-primary" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          {/* Main Dashboard Grid */}
+          <div className="grid lg:grid-cols-3 gap-8 mb-8">
+            {/* Left Column - Profile and Progress */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* User Profile Summary */}
+              <UserProfileSummary />
+              
+              {/* Interview Progress */}
+              <InterviewProgress />
+              
+              {/* System Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {systemStats.map((stat, index) => (
+                  <Card key={stat.label} className="bg-card border border-border hover:border-primary/20 transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
+                          <p className="text-xl font-bold text-foreground">{stat.value}</p>
+                          <p className="text-sm text-green-400 flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3" />
+                            {stat.trend}
+                          </p>
+                        </div>
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <stat.icon className="h-5 w-5 text-primary" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Column - Career Insights */}
+            <div className="space-y-6">
+              <CareerInsights />
+            </div>
           </div>
 
           {/* Quick Actions Grid */}
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
             {quickActions.map((action, index) => (
               <Card 
                 key={action.title}
