@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AudioRecorder, encodeAudioForAPI, playAudioData } from '@/utils/RealtimeAudio';
 import { supabase } from '@/integrations/supabase/client';
@@ -146,7 +145,11 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
             
           case 'error':
             console.error('WebSocket error:', data.error);
-            setError(data.error);
+            // Fix: Extract the error message properly
+            const errorMessage = typeof data.error === 'object' && data.error !== null 
+              ? data.error.message || JSON.stringify(data.error)
+              : String(data.error);
+            setError(errorMessage);
             break;
         }
       };
