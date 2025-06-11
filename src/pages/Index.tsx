@@ -2,13 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Sparkles, Users, Mic, Brain, Zap, LogOut, User as UserIcon } from "lucide-react";
+import { FileText, Brain, Zap, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useResumeStorage } from "@/hooks/useResumeStorage";
 import EnhancedInterview from "@/components/EnhancedInterview";
 import RealtimeResume from "@/components/RealtimeResume";
-import GraphShowcase from "@/components/GraphShowcase";
 
 type AppState = 'welcome' | 'interview' | 'resume';
 
@@ -134,34 +133,33 @@ const Index = () => {
           </Button>
         </div>
 
-        <div className="text-center mb-12">
+        <div className="text-center mb-16">
           <div className="flex justify-center mb-6">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-4">
               <FileText className="h-12 w-12 text-white" />
             </div>
           </div>
           <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
-            Enhanced AI Resume Creator
+            AI Resume Creator
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Experience the future of resume creation with AI-powered enhancement, real-time updates, 
-            interactive voice assistance, and professional knowledge graphs.
+            Create professional resumes with AI-powered interviews and real-time enhancement.
           </p>
         </div>
 
-        {/* Original features grid */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-6xl mx-auto">
+        {/* Simplified features grid */}
+        <div className="grid md:grid-cols-3 gap-8 mb-16 max-w-4xl mx-auto">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="text-center pb-4">
               <div className="bg-blue-100 rounded-full p-3 w-fit mx-auto mb-4">
                 <Brain className="h-6 w-6 text-blue-600" />
               </div>
-              <CardTitle className="text-lg">AI-Enhanced Interview</CardTitle>
+              <CardTitle className="text-lg">AI Interview</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Our advanced AI conducts personalized interviews with real-time content enhancement 
-                and intelligent suggestions to bring out your best qualities.
+                Intelligent conversations that extract your professional experience 
+                and transform it into compelling resume content.
               </CardDescription>
             </CardContent>
           </Card>
@@ -175,8 +173,8 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Watch your resume improve instantly with AI-powered content enhancement, 
-                live preview updates, and smart formatting suggestions.
+                Watch your resume improve instantly with AI suggestions 
+                and professional formatting as you speak.
               </CardDescription>
             </CardContent>
           </Card>
@@ -184,67 +182,17 @@ const Index = () => {
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="text-center pb-4">
               <div className="bg-purple-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Mic className="h-6 w-6 text-purple-600" />
+                <FileText className="h-6 w-6 text-purple-600" />
               </div>
-              <CardTitle className="text-lg">Voice Assistance</CardTitle>
+              <CardTitle className="text-lg">Professional Format</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Get personalized career advice through our interactive voice chat system 
-                and text-to-speech capabilities for a truly hands-free experience.
+                Get beautifully formatted resumes with live preview 
+                and professional styling that works everywhere.
               </CardDescription>
             </CardContent>
           </Card>
-
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="text-center pb-4">
-              <div className="bg-green-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Users className="h-6 w-6 text-green-600" />
-              </div>
-              <CardTitle className="text-lg">Interactive Guidance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center">
-                Get instant help and career advice through our AI assistant chat feature 
-                available throughout the interview process.
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="text-center pb-4">
-              <div className="bg-orange-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Sparkles className="h-6 w-6 text-orange-600" />
-              </div>
-              <CardTitle className="text-lg">Smart Content</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center">
-                Every section of your resume is intelligently enhanced with industry-specific 
-                terminology and achievement-focused language.
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="text-center pb-4">
-              <div className="bg-teal-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <FileText className="h-6 w-6 text-teal-600" />
-              </div>
-              <CardTitle className="text-lg">Perfect Format</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center">
-                Get beautifully formatted markdown resumes with live preview, 
-                real-time updates, and professional styling that works everywhere.
-              </CardDescription>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* New Graph Database Showcase */}
-        <div className="mb-12">
-          <GraphShowcase onStartInterview={handleStartInterview} />
         </div>
 
         <div className="text-center">
@@ -253,10 +201,10 @@ const Index = () => {
             size="lg" 
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
           >
-            Start Enhanced AI Interview
+            Start AI Interview
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
-            Experience the future of resume creation • AI-powered • Voice-enabled • Knowledge graphs • Real-time updates
+            Transform your experience into a professional resume in minutes
           </p>
         </div>
       </div>
