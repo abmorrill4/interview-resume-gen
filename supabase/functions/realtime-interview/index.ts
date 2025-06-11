@@ -33,13 +33,13 @@ serve(async (req) => {
   socket.onopen = () => {
     console.log("Client connected to realtime interview");
     
-    // Connect to OpenAI Realtime API - headers are sent after connection via protocol
+    // Connect to OpenAI Realtime API with proper authentication
     const openaiUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
     console.log("Connecting to OpenAI:", openaiUrl);
     
     try {
-      // Create WebSocket without headers - Deno doesn't support headers in constructor
-      openaiWs = new WebSocket(openaiUrl, ["realtime", `Bearer.${OPENAI_API_KEY}`]);
+      // Use the correct authentication method for OpenAI Realtime API
+      openaiWs = new WebSocket(openaiUrl, [`realtime`, `openai-insecure-api-key.${OPENAI_API_KEY}`]);
 
       openaiWs.onopen = () => {
         console.log("Connected to OpenAI Realtime API");
