@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -181,7 +180,6 @@ const Interview: React.FC<InterviewProps> = ({
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
-  // Pre-fill personal info from user profile if available
   useEffect(() => {
     if (user && currentQuestionIndex === 0 && !answers.fullName) {
       const userEmail = user.email || '';
@@ -383,7 +381,6 @@ const Interview: React.FC<InterviewProps> = ({
     };
   };
 
-  // Utility functions for text extraction
   const extractNameFromText = (text: string): string => {
     const nameMatch = text.match(/(?:I'm|my name is|I am)\s+([A-Za-z]+\s+[A-Za-z]+)/i);
     return nameMatch ? nameMatch[1] : '';
@@ -549,7 +546,6 @@ const Interview: React.FC<InterviewProps> = ({
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-3">
@@ -608,7 +604,6 @@ const Interview: React.FC<InterviewProps> = ({
               isConnected={isConnected}
             />
 
-            {/* Profile Updates Card */}
             {profileUpdates.lastUpdate && (
               <Card className="border-0 shadow-lg mb-6 bg-gradient-to-r from-green-50 to-blue-50">
                 <CardContent className="p-4">
@@ -637,7 +632,6 @@ const Interview: React.FC<InterviewProps> = ({
               </Card>
             )}
 
-            {/* Conversation Display */}
             <Card className="border-0 shadow-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

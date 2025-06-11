@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useResumeStorage } from "@/hooks/useResumeStorage";
-import RealtimeInterview from "@/components/RealtimeInterview";
 import InterviewSummary from "@/components/InterviewSummary";
 import Navigation from "@/components/Navigation";
 import UserDashboard from "@/components/UserDashboard";
@@ -66,7 +65,7 @@ const Index = () => {
   }, [user, loading, navigate]);
 
   const handleStartInterview = () => {
-    setCurrentState('interview');
+    navigate('/interview');
   };
 
   const handleInterviewComplete = async (data: UserData, messages: Message[]) => {
@@ -104,10 +103,6 @@ const Index = () => {
 
   if (!user) {
     return null; // Will redirect to auth page via useEffect
-  }
-
-  if (currentState === 'interview') {
-    return <RealtimeInterview onComplete={handleInterviewComplete} initialData={userData} />;
   }
 
   if (currentState === 'summary') {
