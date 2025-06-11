@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useResumeStorage } from "@/hooks/useResumeStorage";
 import EnhancedInterview from "@/components/EnhancedInterview";
 import RealtimeResume from "@/components/RealtimeResume";
+import RealtimeInterview from "@/components/RealtimeInterview";
 
 type AppState = 'welcome' | 'interview' | 'resume';
 
@@ -104,7 +104,7 @@ const Index = () => {
   }
 
   if (currentState === 'interview') {
-    return <EnhancedInterview onComplete={handleInterviewComplete} initialData={userData} />;
+    return <RealtimeInterview onComplete={handleInterviewComplete} initialData={userData} />;
   }
 
   if (currentState === 'resume') {
