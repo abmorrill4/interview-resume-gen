@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Brain, Zap, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useResumeStorage } from "@/hooks/useResumeStorage";
 import RealtimeInterview from "@/components/RealtimeInterview";
 import InterviewSummary from "@/components/InterviewSummary";
+import Navigation from "@/components/Navigation";
+import LandingHero from "@/components/LandingHero";
+import ModuleShowcase from "@/components/ModuleShowcase";
 
 type AppState = 'welcome' | 'interview' | 'summary';
 
@@ -42,7 +42,7 @@ interface UserData {
 }
 
 const Index = () => {
-  const { user, signOut, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { saveResume } = useResumeStorage();
   const [currentState, setCurrentState] = useState<AppState>('welcome');
@@ -92,11 +92,6 @@ const Index = () => {
     });
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
@@ -121,102 +116,10 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="container mx-auto px-4 py-12">
-        {/* Header with user info and sign out */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-2">
-            <UserIcon className="h-5 w-5 text-blue-600" />
-            <span className="text-sm text-muted-foreground">
-              Welcome, {user.email}
-            </span>
-          </div>
-          <Button
-            onClick={handleSignOut}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Button>
-        </div>
-
-        <div className="text-center mb-16">
-          <div className="flex justify-center mb-6">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-4">
-              <FileText className="h-12 w-12 text-white" />
-            </div>
-          </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
-            AI Interview Platform
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Conduct AI-powered interviews and get detailed insights about your professional profile.
-          </p>
-        </div>
-
-        {/* Features grid */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16 max-w-4xl mx-auto">
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="text-center pb-4">
-              <div className="bg-blue-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Brain className="h-6 w-6 text-blue-600" />
-              </div>
-              <CardTitle className="text-lg">AI Interview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center">
-                Intelligent conversations that extract your professional experience 
-                and create detailed insights about your background.
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="text-center pb-4">
-              <div className="bg-indigo-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Zap className="h-6 w-6 text-indigo-600" />
-              </div>
-              <CardTitle className="text-lg">Real-Time Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center">
-                Get instant AI-powered analysis and summaries 
-                of your interview responses and career progression.
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="text-center pb-4">
-              <div className="bg-purple-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <FileText className="h-6 w-6 text-purple-600" />
-              </div>
-              <CardTitle className="text-lg">Detailed Insights</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center">
-                Comprehensive transcript review with change analysis 
-                and professional development recommendations.
-              </CardDescription>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="text-center">
-          <Button 
-            onClick={handleStartInterview}
-            size="lg" 
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            Start AI Interview
-          </Button>
-          <p className="text-sm text-muted-foreground mt-4">
-            Analyze your professional experience with AI-powered insights
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-white">
+      <Navigation />
+      <LandingHero onStartInterview={handleStartInterview} />
+      <ModuleShowcase onStartInterview={handleStartInterview} />
     </div>
   );
 };
