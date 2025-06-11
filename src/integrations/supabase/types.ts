@@ -292,6 +292,51 @@ export type Database = {
         }
         Relationships: []
       }
+      uploaded_documents: {
+        Row: {
+          document_type: string
+          error_message: string | null
+          extracted_data: Json | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          processed_at: string | null
+          processing_status: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          document_type: string
+          error_message?: string | null
+          extracted_data?: Json | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          document_type?: string
+          error_message?: string | null
+          extracted_data?: Json | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_skills: {
         Row: {
           proficiency_level: string | null

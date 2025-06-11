@@ -1,32 +1,34 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Briefcase, GraduationCap, Award, Code, User } from 'lucide-react';
+import { Briefcase, GraduationCap, Award, Code, User, Brain, FolderOpen, Trophy, FileText } from 'lucide-react';
 import ExperiencePage from '@/components/profile/ExperiencePage';
 import SkillsPage from '@/components/profile/SkillsPage';
 import EducationPage from '@/components/profile/EducationPage';
 import ProjectsPage from '@/components/profile/ProjectsPage';
 import AchievementsPage from '@/components/profile/AchievementsPage';
 import { useProfileData } from '@/hooks/useProfileData';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 const ProfileHub: React.FC = () => {
   const { user } = useAuth();
-  const { profileStats, loading } = useProfileData();
+  const navigate = useNavigate();
+  const { profileStats, fetchProfileStats } = useProfileData();
+  
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    fetchProfileStats();
+  }, [user, navigate, fetchProfileStats]);
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-        <Card>
-          <CardContent className="p-8">
-            <p className="text-center text-muted-foreground">Please sign in to access your profile.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   const calculateCompleteness = () => {
@@ -40,6 +42,59 @@ const ProfileHub: React.FC = () => {
     ];
     return sections.reduce((sum, val) => sum + val, 0);
   };
+
+  // Update pages array to include Documents
+  const pages = [
+    {
+      id: 'overview',
+      label: 'Overview',
+      icon: User,
+      component: ProfileSnapshot,
+      description: 'Profile summary and quick stats'
+    },
+    {
+      id: 'experience',
+      label: 'Experience',
+      icon: Briefcase,
+      component: ExperiencePage,
+      description: 'Work history and professional experience'
+    },
+    {
+      id: 'skills',
+      label: 'Skills',
+      icon: Brain,
+      component: SkillsPage,
+      description: 'Technical and professional skills'
+    },
+    {
+      id: 'education',
+      label: 'Education',
+      icon: GraduationCap,
+      component: EducationPage,
+      description: 'Academic background and qualifications'
+    },
+    {
+      id: 'projects',
+      label: 'Projects',
+      icon: FolderOpen,
+      component: ProjectsPage,
+      description: 'Portfolio and project showcase'
+    },
+    {
+      id: 'achievements',
+      label: 'Achievements',
+      icon: Trophy,
+      component: AchievementsPage,
+      description: 'Awards, certifications, and accomplishments'
+    },
+    {
+      id: 'documents',
+      label: 'Documents',
+      icon: FileText,
+      component: React.lazy(() => import('@/components/profile/DocumentsPage')),
+      description: 'Upload and manage professional documents'
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
