@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AudioRecorder, encodeAudioForAPI, playAudioData } from '@/utils/RealtimeAudio';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,9 +15,14 @@ interface UseRealtimeInterviewReturn {
   isConnected: boolean;
   isListening: boolean;
   isSpeaking: boolean;
+  isPaused: boolean;
+  isMuted: boolean;
   messages: Message[];
   connect: () => Promise<void>;
   disconnect: () => void;
+  togglePause: () => void;
+  toggleMute: () => void;
+  repeatLastQuestion: () => void;
   error: string | null;
   profileUpdates: {
     totalUpdates: number;
@@ -38,6 +42,8 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [profileUpdates, setProfileUpdates] = useState<{
@@ -58,6 +64,7 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentTranscriptRef = useRef<string>('');
+  const lastQuestionRef = useRef<string>('');
 
   const processUserMessage = useCallback(async (content: string) => {
     if (!user?.id || !content?.trim()) return;
@@ -97,13 +104,74 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
   }, [user?.id, toast]);
 
   const handleAudioData = useCallback((audioData: Float32Array) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && !isPaused) {
       const encodedAudio = encodeAudioForAPI(audioData);
       wsRef.current.send(JSON.stringify({
         type: 'input_audio_buffer.append',
         audio: encodedAudio
       }));
     }
+  }, [isPaused]);
+
+  const togglePause = useCallback(() => {
+    setIsPaused(prev => {
+      const newPaused = !prev;
+      console.log(`Interview ${newPaused ? 'paused' : 'resumed'}`);
+      
+      if (newPaused) {
+        // Pause audio recording
+        if (audioRecorderRef.current) {
+          audioRecorderRef.current.stop();
+        }
+      } else {
+        // Resume audio recording
+        if (audioRecorderRef.current && isConnected) {
+          audioRecorderRef.current.start();
+        }
+      }
+      
+      return newPaused;
+    });
+  }, [isConnected]);
+
+  const toggleMute = useCallback(() => {
+    setIsMuted(prev => {
+      const newMuted = !prev;
+      console.log(`AI audio ${newMuted ? 'muted' : 'unmuted'}`);
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.destination.context.suspend();
+        if (!newMuted) {
+          audioContextRef.current.destination.context.resume();
+        }
+      }
+      
+      return newMuted;
+    });
+  }, []);
+
+  const repeatLastQuestion = useCallback(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    
+    console.log('Requesting AI to repeat last question');
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [
+          {
+            type: 'input_text',
+            text: 'Could you please repeat your last question?'
+          }
+        ]
+      }
+    }));
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'response.create'
+    }));
   }, []);
 
   const connect = useCallback(async () => {
@@ -166,7 +234,7 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
             break;
             
           case 'response.audio.delta':
-            if (data.delta && audioContextRef.current) {
+            if (data.delta && audioContextRef.current && !isMuted) {
               const binaryString = atob(data.delta);
               const bytes = new Uint8Array(binaryString.length);
               for (let i = 0; i < binaryString.length; i++) {
@@ -205,11 +273,14 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
             
           case 'response.audio_transcript.done':
             if (currentTranscriptRef.current) {
-              setMessages(prev => [...prev, {
-                role: 'assistant',
+              const assistantMessage = {
+                role: 'assistant' as const,
                 content: currentTranscriptRef.current,
                 timestamp: new Date()
-              }]);
+              };
+              
+              setMessages(prev => [...prev, assistantMessage]);
+              lastQuestionRef.current = currentTranscriptRef.current;
               currentTranscriptRef.current = '';
             }
             break;
@@ -246,7 +317,7 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
       console.error('Error connecting to realtime interview:', err);
       setError(errorMessage);
     }
-  }, [handleAudioData, processUserMessage]);
+  }, [handleAudioData, processUserMessage, isMuted]);
 
   const disconnect = useCallback(() => {
     console.log('Disconnecting...');
@@ -269,6 +340,8 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
     setIsConnected(false);
     setIsListening(false);
     setIsSpeaking(false);
+    setIsPaused(false);
+    setIsMuted(false);
     setError(null);
   }, []);
 
@@ -282,9 +355,14 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
     isConnected,
     isListening,
     isSpeaking,
+    isPaused,
+    isMuted,
     messages,
     connect,
     disconnect,
+    togglePause,
+    toggleMute,
+    repeatLastQuestion,
     error,
     profileUpdates
   };

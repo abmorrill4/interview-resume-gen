@@ -6,6 +6,11 @@ import DocumentViewer from '@/components/DocumentViewer';
 const DocumentsPage: React.FC = () => {
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
 
+  const handleDocumentUpload = (documentId: string) => {
+    // Automatically transition to DocumentViewer after successful upload
+    setSelectedDocumentId(documentId);
+  };
+
   if (selectedDocumentId) {
     return (
       <DocumentViewer
@@ -26,7 +31,7 @@ const DocumentsPage: React.FC = () => {
         </div>
       </div>
 
-      <DocumentUpload onDocumentSelect={setSelectedDocumentId} />
+      <DocumentUpload onDocumentSelect={handleDocumentUpload} />
     </div>
   );
 };
