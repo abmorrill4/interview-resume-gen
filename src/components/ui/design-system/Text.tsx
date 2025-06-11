@@ -57,8 +57,8 @@ export const Text: React.FC<TextProps> = ({
         className
       )}
       style={{
-        fontSize,
-        lineHeight,
+        fontSize: fontSize,
+        lineHeight: lineHeight,
         fontWeight: typography.fontWeight[weight],
         ...style,
       }}
