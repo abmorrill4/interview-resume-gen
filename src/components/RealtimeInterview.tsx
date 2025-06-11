@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +33,7 @@ interface UserData {
 }
 
 interface RealtimeInterviewProps {
-  onComplete: (data: UserData) => void;
+  onComplete: (data: UserData, messages: any[]) => void;
   initialData: UserData;
 }
 
@@ -85,11 +84,13 @@ const RealtimeInterview: React.FC<RealtimeInterviewProps> = ({ onComplete, initi
     
     // Process the conversation and extract resume data
     const processedData = processConversationToUserData(messages);
-    onComplete(processedData);
+    
+    // Pass both the processed data and the messages to the parent
+    onComplete(processedData, messages);
     
     toast({
       title: "Interview Complete",
-      description: "Processing your responses to create your resume...",
+      description: "Processing your responses to create summary...",
     });
   };
 
@@ -347,3 +348,5 @@ const RealtimeInterview: React.FC<RealtimeInterviewProps> = ({ onComplete, initi
 };
 
 export default RealtimeInterview;
+
+}

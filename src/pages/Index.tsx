@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,11 +6,16 @@ import { FileText, Brain, Zap, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useResumeStorage } from "@/hooks/useResumeStorage";
-import EnhancedInterview from "@/components/EnhancedInterview";
-import RealtimeResume from "@/components/RealtimeResume";
 import RealtimeInterview from "@/components/RealtimeInterview";
+import InterviewSummary from "@/components/InterviewSummary";
 
-type AppState = 'welcome' | 'interview' | 'resume';
+type AppState = 'welcome' | 'interview' | 'summary';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
 
 interface UserData {
   personalInfo: {
@@ -40,6 +46,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { saveResume } = useResumeStorage();
   const [currentState, setCurrentState] = useState<AppState>('welcome');
+  const [interviewMessages, setInterviewMessages] = useState<Message[]>([]);
   const [userData, setUserData] = useState<UserData>({
     personalInfo: {
       fullName: '',
@@ -63,17 +70,19 @@ const Index = () => {
     setCurrentState('interview');
   };
 
-  const handleInterviewComplete = async (data: UserData) => {
+  const handleInterviewComplete = async (data: UserData, messages: Message[]) => {
     setUserData(data);
+    setInterviewMessages(messages);
     
-    // Save resume to database and create graph
-    await saveResume(data);
+    // Save interview data to database
+    await saveResume(data, messages);
     
-    setCurrentState('resume');
+    setCurrentState('summary');
   };
 
   const handleStartOver = () => {
     setCurrentState('welcome');
+    setInterviewMessages([]);
     setUserData({
       personalInfo: { fullName: '', email: '', phone: '', linkedin: '' },
       workExperience: [],
@@ -107,8 +116,8 @@ const Index = () => {
     return <RealtimeInterview onComplete={handleInterviewComplete} initialData={userData} />;
   }
 
-  if (currentState === 'resume') {
-    return <RealtimeResume userData={userData} onStartOver={handleStartOver} />;
+  if (currentState === 'summary') {
+    return <InterviewSummary messages={interviewMessages} onStartOver={handleStartOver} />;
   }
 
   return (
@@ -140,14 +149,14 @@ const Index = () => {
             </div>
           </div>
           <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
-            AI Resume Creator
+            AI Interview Platform
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Create professional resumes with AI-powered interviews and real-time enhancement.
+            Conduct AI-powered interviews and get detailed insights about your professional profile.
           </p>
         </div>
 
-        {/* Simplified features grid */}
+        {/* Features grid */}
         <div className="grid md:grid-cols-3 gap-8 mb-16 max-w-4xl mx-auto">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="text-center pb-4">
@@ -159,7 +168,7 @@ const Index = () => {
             <CardContent>
               <CardDescription className="text-center">
                 Intelligent conversations that extract your professional experience 
-                and transform it into compelling resume content.
+                and create detailed insights about your background.
               </CardDescription>
             </CardContent>
           </Card>
@@ -169,12 +178,12 @@ const Index = () => {
               <div className="bg-indigo-100 rounded-full p-3 w-fit mx-auto mb-4">
                 <Zap className="h-6 w-6 text-indigo-600" />
               </div>
-              <CardTitle className="text-lg">Real-Time Enhancement</CardTitle>
+              <CardTitle className="text-lg">Real-Time Analysis</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Watch your resume improve instantly with AI suggestions 
-                and professional formatting as you speak.
+                Get instant AI-powered analysis and summaries 
+                of your interview responses and career progression.
               </CardDescription>
             </CardContent>
           </Card>
@@ -184,12 +193,12 @@ const Index = () => {
               <div className="bg-purple-100 rounded-full p-3 w-fit mx-auto mb-4">
                 <FileText className="h-6 w-6 text-purple-600" />
               </div>
-              <CardTitle className="text-lg">Professional Format</CardTitle>
+              <CardTitle className="text-lg">Detailed Insights</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Get beautifully formatted resumes with live preview 
-                and professional styling that works everywhere.
+                Comprehensive transcript review with change analysis 
+                and professional development recommendations.
               </CardDescription>
             </CardContent>
           </Card>
@@ -204,7 +213,7 @@ const Index = () => {
             Start AI Interview
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
-            Transform your experience into a professional resume in minutes
+            Analyze your professional experience with AI-powered insights
           </p>
         </div>
       </div>
