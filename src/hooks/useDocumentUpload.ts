@@ -44,12 +44,14 @@ export const useDocumentUpload = () => {
     setLoading(true);
 
     try {
-      // Create unique file path
+      // Create unique file path with user ID folder structure
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      // Upload to storage
+      console.log('Uploading file to path:', filePath);
+
+      // Upload to storage bucket (the bucket should exist based on the migration)
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, file, {
@@ -57,13 +59,18 @@ export const useDocumentUpload = () => {
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
 
-      // Create database record
+      console.log('File uploaded successfully:', uploadData);
+
+      // Create database record with explicit user_id
       const { data: documentData, error: dbError } = await supabase
         .from('uploaded_documents')
         .insert({
-          user_id: user.id,
+          user_id: user.id, // Explicitly set user_id for RLS
           file_name: file.name,
           file_path: uploadData.path,
           file_type: file.type,
@@ -74,7 +81,12 @@ export const useDocumentUpload = () => {
         .select()
         .single();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        throw dbError;
+      }
+
+      console.log('Document record created:', documentData);
 
       toast({
         title: "Upload successful",
@@ -99,16 +111,26 @@ export const useDocumentUpload = () => {
   }, [user, toast]);
 
   const fetchDocuments = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, skipping document fetch');
+      return;
+    }
 
     try {
+      console.log('Fetching documents for user:', user.id);
+      
       const { data, error } = await supabase
         .from('uploaded_documents')
         .select('*')
         .eq('user_id', user.id)
         .order('uploaded_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching documents:', error);
+        throw error;
+      }
+      
+      console.log('Documents fetched:', data);
       setDocuments(data || []);
     } catch (error) {
       console.error('Error fetching documents:', error);
@@ -126,21 +148,30 @@ export const useDocumentUpload = () => {
     setLoading(true);
 
     try {
+      console.log('Deleting document:', documentId, filePath);
+
       // Delete from storage
       const { error: storageError } = await supabase.storage
         .from('documents')
         .remove([filePath]);
 
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error('Storage delete error:', storageError);
+        // Don't throw here - the file might already be deleted or not exist
+        console.warn('Storage delete failed, continuing with database deletion');
+      }
 
       // Delete from database
       const { error: dbError } = await supabase
         .from('uploaded_documents')
         .delete()
         .eq('id', documentId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id); // Ensure user can only delete their own documents
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database delete error:', dbError);
+        throw dbError;
+      }
 
       toast({
         title: "Document deleted",
@@ -165,12 +196,26 @@ export const useDocumentUpload = () => {
   }, [user, toast, fetchDocuments]);
 
   const downloadDocument = useCallback(async (filePath: string, fileName: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to download documents.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      console.log('Downloading document:', filePath);
+
       const { data, error } = await supabase.storage
         .from('documents')
         .download(filePath);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Download error:', error);
+        throw error;
+      }
 
       // Create download link
       const url = URL.createObjectURL(data);
@@ -181,6 +226,8 @@ export const useDocumentUpload = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      console.log('Download completed successfully');
     } catch (error) {
       console.error('Error downloading document:', error);
       toast({
@@ -189,7 +236,7 @@ export const useDocumentUpload = () => {
         variant: "destructive"
       });
     }
-  }, [toast]);
+  }, [user, toast]);
 
   return {
     uploadDocument,
