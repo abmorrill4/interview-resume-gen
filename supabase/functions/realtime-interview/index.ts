@@ -1,6 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,8 +15,18 @@ serve(async (req) => {
   }
 
   const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
   if (!OPENAI_API_KEY) {
     return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return new Response(JSON.stringify({ error: 'Supabase configuration not found' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -30,15 +41,33 @@ serve(async (req) => {
   
   let openaiWs: WebSocket | null = null;
 
-  socket.onopen = () => {
+  socket.onopen = async () => {
     console.log("Client connected to realtime interview");
     
-    // Connect to OpenAI Realtime API using the correct authentication method for Deno
-    const openaiUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
-    console.log("Connecting to OpenAI:", openaiUrl);
-    
     try {
-      // Use the correct subprotocol authentication method for OpenAI Realtime API
+      // Initialize Supabase client
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      // Fetch the AI interviewer system prompt
+      const { data: promptData, error: promptError } = await supabase
+        .from('system_prompts')
+        .select('prompt')
+        .eq('name', 'ai_interviewer')
+        .single();
+
+      if (promptError) {
+        console.error('Error fetching system prompt:', promptError);
+        socket.send(JSON.stringify({ type: 'error', error: 'Failed to load interview configuration' }));
+        return;
+      }
+
+      const systemPrompt = promptData?.prompt || 'You are a helpful AI interviewer.';
+      console.log('Loaded system prompt from database');
+
+      // Connect to OpenAI Realtime API
+      const openaiUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
+      console.log("Connecting to OpenAI:", openaiUrl);
+      
       openaiWs = new WebSocket(openaiUrl, [
         "realtime", 
         `openai-insecure-api-key.${OPENAI_API_KEY}`,
@@ -48,29 +77,12 @@ serve(async (req) => {
       openaiWs.onopen = () => {
         console.log("Connected to OpenAI Realtime API");
         
-        // Send session configuration after connection
+        // Send session configuration with the dynamic system prompt
         const sessionConfig = {
           type: 'session.update',
           session: {
             modalities: ["text", "audio"],
-            instructions: `You are an expert career counselor conducting a friendly, conversational resume interview. Your goal is to help the user create an outstanding resume by gathering information about their:
-
-1. Personal information (name, email, phone, LinkedIn)
-2. Work experience (job titles, companies, dates, responsibilities, achievements)
-3. Education (degrees, schools, graduation dates)
-4. Skills (technical and soft skills)
-5. Notable achievements and accomplishments
-
-Guidelines:
-- Be conversational and encouraging
-- Ask follow-up questions to get specific details
-- Help them quantify their achievements with numbers when possible
-- Ask about impact and results of their work
-- Keep the tone professional but friendly
-- Don't rush - let them share their story naturally
-- When you have enough information, let them know the interview is complete
-
-Start by introducing yourself and asking them to tell you about themselves and their career goals.`,
+            instructions: systemPrompt,
             voice: "alloy",
             input_audio_format: "pcm16",
             output_audio_format: "pcm16",
@@ -91,6 +103,7 @@ Start by introducing yourself and asking them to tell you about themselves and t
         };
         
         openaiWs?.send(JSON.stringify(sessionConfig));
+        console.log("Session configuration sent with dynamic prompt");
       };
 
       openaiWs.onmessage = (event) => {
@@ -111,8 +124,8 @@ Start by introducing yourself and asking them to tell you about themselves and t
         socket.close();
       };
     } catch (error) {
-      console.error("Failed to create OpenAI WebSocket:", error);
-      socket.send(JSON.stringify({ type: 'error', error: 'Failed to connect to AI service' }));
+      console.error("Failed to initialize interview:", error);
+      socket.send(JSON.stringify({ type: 'error', error: 'Failed to initialize interview' }));
       socket.close();
     }
   };
