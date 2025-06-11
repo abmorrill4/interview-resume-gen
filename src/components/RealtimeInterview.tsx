@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Mic, MicOff, Volume2, VolumeX, User, Bot, Phone, PhoneOff } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, User, Bot, Phone, PhoneOff, Sparkles, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRealtimeInterview } from "@/hooks/useRealtimeInterview";
 import { cn } from "@/lib/utils";
@@ -46,7 +47,8 @@ const RealtimeInterview: React.FC<RealtimeInterviewProps> = ({ onComplete, initi
     messages,
     connect,
     disconnect,
-    error
+    error,
+    profileUpdates
   } = useRealtimeInterview();
   
   const [interviewStarted, setInterviewStarted] = useState(false);
@@ -198,10 +200,10 @@ const RealtimeInterview: React.FC<RealtimeInterviewProps> = ({ onComplete, initi
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Volume2 className="h-5 w-5 text-blue-600 mt-1" />
+                    <Sparkles className="h-5 w-5 text-blue-600 mt-1" />
                     <div>
-                      <p className="font-medium">Real-time feedback</p>
-                      <p className="text-sm text-muted-foreground">Get immediate responses and follow-up questions</p>
+                      <p className="font-medium">Real-time profile updates</p>
+                      <p className="text-sm text-muted-foreground">Your profile hub updates automatically as you speak</p>
                     </div>
                   </div>
                 </div>
@@ -268,7 +270,43 @@ const RealtimeInterview: React.FC<RealtimeInterviewProps> = ({ onComplete, initi
               {isSpeaking ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
               {isSpeaking ? "AI Speaking" : "AI Quiet"}
             </Badge>
+
+            {profileUpdates.totalUpdates > 0 && (
+              <Badge variant="default" className="flex items-center gap-1 bg-green-100 text-green-800">
+                <TrendingUp className="h-3 w-3" />
+                {profileUpdates.totalUpdates} Profile Updates
+              </Badge>
+            )}
           </div>
+
+          {/* Profile Updates Card */}
+          {profileUpdates.lastUpdate && (
+            <Card className="border-0 shadow-lg mb-6 bg-gradient-to-r from-green-50 to-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Profile Hub Updated!</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {profileUpdates.lastUpdate.experiences > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.experiences} Experience(s)</Badge>
+                  )}
+                  {profileUpdates.lastUpdate.skills > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.skills} Skill(s)</Badge>
+                  )}
+                  {profileUpdates.lastUpdate.education > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.education} Education(s)</Badge>
+                  )}
+                  {profileUpdates.lastUpdate.projects > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.projects} Project(s)</Badge>
+                  )}
+                  {profileUpdates.lastUpdate.achievements > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.achievements} Achievement(s)</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Conversation Display */}
           <Card className="border-0 shadow-xl">
@@ -336,7 +374,7 @@ const RealtimeInterview: React.FC<RealtimeInterviewProps> = ({ onComplete, initi
                   💡 <strong>Tip:</strong> Speak naturally about your experience, skills, and achievements
                 </p>
                 <p>
-                  The AI will ask follow-up questions to help create your perfect resume
+                  The AI will ask follow-up questions and automatically update your profile hub as you talk
                 </p>
               </div>
             </CardContent>

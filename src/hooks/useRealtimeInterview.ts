@@ -1,6 +1,10 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AudioRecorder, encodeAudioForAPI, playAudioData } from '@/utils/RealtimeAudio';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { ProfileUpdateService } from '@/services/ProfileUpdateService';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -16,19 +20,81 @@ interface UseRealtimeInterviewReturn {
   connect: () => Promise<void>;
   disconnect: () => void;
   error: string | null;
+  profileUpdates: {
+    totalUpdates: number;
+    lastUpdate: {
+      experiences: number;
+      skills: number;
+      education: number;
+      projects: number;
+      achievements: number;
+    } | null;
+  };
 }
 
 export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [profileUpdates, setProfileUpdates] = useState<{
+    totalUpdates: number;
+    lastUpdate: {
+      experiences: number;
+      skills: number;
+      education: number;
+      projects: number;
+      achievements: number;
+    } | null;
+  }>({
+    totalUpdates: 0,
+    lastUpdate: null
+  });
   
   const wsRef = useRef<WebSocket | null>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentTranscriptRef = useRef<string>('');
+
+  const processUserMessage = useCallback(async (content: string) => {
+    if (!user?.id || !content?.trim()) return;
+
+    try {
+      console.log('Processing user message for profile updates:', content);
+      
+      const result = await ProfileUpdateService.processInterviewMessage(user.id, content);
+      
+      if (result.updated) {
+        const totalNewItems = Object.values(result.addedItems).reduce((sum, count) => sum + count, 0);
+        
+        setProfileUpdates(prev => ({
+          totalUpdates: prev.totalUpdates + totalNewItems,
+          lastUpdate: result.addedItems
+        }));
+
+        // Show toast notification
+        const updateSummary = [];
+        if (result.addedItems.experiences > 0) updateSummary.push(`${result.addedItems.experiences} experience(s)`);
+        if (result.addedItems.skills > 0) updateSummary.push(`${result.addedItems.skills} skill(s)`);
+        if (result.addedItems.education > 0) updateSummary.push(`${result.addedItems.education} education(s)`);
+        if (result.addedItems.projects > 0) updateSummary.push(`${result.addedItems.projects} project(s)`);
+        if (result.addedItems.achievements > 0) updateSummary.push(`${result.addedItems.achievements} achievement(s)`);
+
+        if (updateSummary.length > 0) {
+          toast({
+            title: "Profile Updated!",
+            description: `Added ${updateSummary.join(', ')} to your profile hub.`,
+            duration: 4000,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error processing user message for profile updates:', error);
+    }
+  }, [user?.id, toast]);
 
   const handleAudioData = useCallback((audioData: Float32Array) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -118,11 +184,16 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
             
           case 'conversation.item.input_audio_transcription.completed':
             if (data.transcript) {
-              setMessages(prev => [...prev, {
-                role: 'user',
+              const userMessage = {
+                role: 'user' as const,
                 content: data.transcript,
                 timestamp: new Date()
-              }]);
+              };
+              
+              setMessages(prev => [...prev, userMessage]);
+              
+              // Process the user message for profile updates
+              await processUserMessage(data.transcript);
             }
             break;
             
@@ -175,7 +246,7 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
       console.error('Error connecting to realtime interview:', err);
       setError(errorMessage);
     }
-  }, [handleAudioData]);
+  }, [handleAudioData, processUserMessage]);
 
   const disconnect = useCallback(() => {
     console.log('Disconnecting...');
@@ -214,6 +285,7 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
     messages,
     connect,
     disconnect,
-    error
+    error,
+    profileUpdates
   };
 };
