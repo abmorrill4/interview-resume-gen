@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
 import { Upload, FileText, Download, Trash2, AlertCircle, CheckCircle, Eye } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import toast from 'react-hot-toast';
 
 interface DocumentUploadProps {
   onDocumentSelect?: (documentId: string) => void;
@@ -16,7 +17,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onDocumentSelect }) => 
   const [dragOver, setDragOver] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const { uploadDocument, fetchDocuments, deleteDocument, downloadDocument, documents, loading } = useDocumentUpload();
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchDocuments();
@@ -36,21 +36,13 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onDocumentSelect }) => 
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a PDF, Word document, or text file.",
-        variant: "destructive"
-      });
+      toast.error('Please upload a PDF, Word document, or text file.');
       return;
     }
 
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please upload a file smaller than 10MB.",
-        variant: "destructive"
-      });
+      toast.error('Please upload a file smaller than 10MB.');
       return;
     }
 

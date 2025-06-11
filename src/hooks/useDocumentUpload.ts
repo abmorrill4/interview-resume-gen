@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import toast from 'react-hot-toast';
 
 interface UploadDocumentOptions {
   file: File;
@@ -27,17 +27,12 @@ interface UploadedDocument {
 
 export const useDocumentUpload = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
 
   const uploadDocument = useCallback(async ({ file, documentType, onProgress }: UploadDocumentOptions) => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to upload documents.",
-        variant: "destructive"
-      });
+      toast.error('Please sign in to upload documents.');
       return null;
     }
 
@@ -88,10 +83,7 @@ export const useDocumentUpload = () => {
 
       console.log('Document record created:', documentData);
 
-      toast({
-        title: "Upload successful",
-        description: `${file.name} has been uploaded successfully.`
-      });
+      toast.success(`${file.name} has been uploaded successfully.`);
 
       // Refresh documents list
       await fetchDocuments();
@@ -99,16 +91,12 @@ export const useDocumentUpload = () => {
       return documentData;
     } catch (error) {
       console.error('Error uploading document:', error);
-      toast({
-        title: "Upload failed",
-        description: "There was an error uploading your document. Please try again.",
-        variant: "destructive"
-      });
+      toast.error('There was an error uploading your document. Please try again.');
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user]);
 
   const fetchDocuments = useCallback(async () => {
     if (!user) {
@@ -134,13 +122,9 @@ export const useDocumentUpload = () => {
       setDocuments(data || []);
     } catch (error) {
       console.error('Error fetching documents:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load documents.",
-        variant: "destructive"
-      });
+      toast.error('Failed to load documents.');
     }
-  }, [user, toast]);
+  }, [user]);
 
   const deleteDocument = useCallback(async (documentId: string, filePath: string) => {
     if (!user) return false;
@@ -173,10 +157,7 @@ export const useDocumentUpload = () => {
         throw dbError;
       }
 
-      toast({
-        title: "Document deleted",
-        description: "Document has been deleted successfully."
-      });
+      toast.success('Document has been deleted successfully.');
 
       // Refresh documents list
       await fetchDocuments();
@@ -184,24 +165,16 @@ export const useDocumentUpload = () => {
       return true;
     } catch (error) {
       console.error('Error deleting document:', error);
-      toast({
-        title: "Delete failed",
-        description: "There was an error deleting the document.",
-        variant: "destructive"
-      });
+      toast.error('There was an error deleting the document.');
       return false;
     } finally {
       setLoading(false);
     }
-  }, [user, toast, fetchDocuments]);
+  }, [user, fetchDocuments]);
 
   const downloadDocument = useCallback(async (filePath: string, fileName: string) => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to download documents.",
-        variant: "destructive"
-      });
+      toast.error('Please sign in to download documents.');
       return;
     }
 
@@ -230,13 +203,9 @@ export const useDocumentUpload = () => {
       console.log('Download completed successfully');
     } catch (error) {
       console.error('Error downloading document:', error);
-      toast({
-        title: "Download failed",
-        description: "There was an error downloading the document.",
-        variant: "destructive"
-      });
+      toast.error('There was an error downloading the document.');
     }
-  }, [user, toast]);
+  }, [user]);
 
   return {
     uploadDocument,

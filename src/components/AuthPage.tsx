@@ -7,13 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Cpu, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import toast from 'react-hot-toast';
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const AuthPage = () => {
   const { signIn, signUp, user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [signInData, setSignInData] = useState({ email: '', password: '' });
@@ -33,24 +32,13 @@ const AuthPage = () => {
       const { error } = await signIn(signInData.email, signInData.password);
       
       if (error) {
-        toast({
-          title: "Authentication failed",
-          description: error.message,
-          variant: "destructive"
-        });
+        toast.error(error.message);
       } else {
-        toast({
-          title: "Welcome back",
-          description: "Successfully signed in to CareerOS.",
-        });
+        toast.success('Successfully signed in to CareerOS.');
         navigate('/');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
-        variant: "destructive"
-      });
+      toast.error('An unexpected error occurred.');
     } finally {
       setLoading(false);
     }
@@ -64,23 +52,12 @@ const AuthPage = () => {
       const { error } = await signUp(signUpData.email, signUpData.password, signUpData.fullName);
       
       if (error) {
-        toast({
-          title: "Registration failed",
-          description: error.message,
-          variant: "destructive"
-        });
+        toast.error(error.message);
       } else {
-        toast({
-          title: "Account created",
-          description: "Please verify your email to complete registration.",
-        });
+        toast.success('Please verify your email to complete registration.');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
-        variant: "destructive"
-      });
+      toast.error('An unexpected error occurred.');
     } finally {
       setLoading(false);
     }
