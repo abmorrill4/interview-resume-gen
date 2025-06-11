@@ -1,9 +1,11 @@
+
 import { Toaster } from "react-hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import Dashboard from "./pages/Dashboard";
@@ -14,6 +16,7 @@ import InterviewSummaryPage from "./pages/InterviewSummaryPage";
 import NotFound from "./pages/NotFound";
 import Navigation from "./components/Navigation";
 import ErrorFallback from "./components/ErrorFallback";
+import { OnboardingTutorials } from "./components/onboarding/OnboardingTutorials";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +46,7 @@ const AppContent = () => {
   
   return (
     <BrowserRouter>
+      <OnboardingTutorials />
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/" element={
@@ -82,18 +86,20 @@ const App = () => (
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <AuthProvider>
-            <Toaster 
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: 'hsl(var(--background))',
-                  color: 'hsl(var(--foreground))',
-                  border: '1px solid hsl(var(--border))',
-                },
-              }}
-            />
-            <AppContent />
+            <OnboardingProvider>
+              <Toaster 
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: 'hsl(var(--background))',
+                    color: 'hsl(var(--foreground))',
+                    border: '1px solid hsl(var(--border))',
+                  },
+                }}
+              />
+              <AppContent />
+            </OnboardingProvider>
           </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>

@@ -48,7 +48,8 @@ const UserDashboard: React.FC = () => {
       primary: true,
       gradient: 'from-purple-600 via-blue-600 to-cyan-500',
       glowColor: 'shadow-purple-500/30',
-      bgClass: 'gradient-primary'
+      bgClass: 'gradient-primary',
+      dataTour: 'ai-interview'
     },
     {
       title: 'Profile Hub',
@@ -58,7 +59,8 @@ const UserDashboard: React.FC = () => {
       primary: false,
       gradient: 'from-green-500 via-teal-500 to-blue-500',
       glowColor: 'shadow-green-500/30',
-      bgClass: 'gradient-secondary'
+      bgClass: 'gradient-secondary',
+      dataTour: 'profile-hub'
     },
     {
       title: 'Resume Builder',
@@ -83,7 +85,7 @@ const UserDashboard: React.FC = () => {
       <Container maxWidth="7xl" padding="xl">
         <Stack gap="6xl">
           {/* Welcome Section */}
-          <Stack align="center" gap="xl" className="slide-up">
+          <Stack align="center" gap="xl" className="slide-up dashboard-welcome">
             <Surface variant="ghost" padding="lg" radius="full" className="bg-gradient-primary hover:scale-105 transition-transform duration-300">
               <Stack direction="row" gap="sm" align="center">
                 <Sparkles className="h-5 w-5 text-white animate-pulse" />
@@ -119,7 +121,7 @@ const UserDashboard: React.FC = () => {
             {/* Left Column - Profile and Progress */}
             <div className="lg:col-span-2 space-y-8">
               {/* User Profile Summary */}
-              <div className="fade-in-up">
+              <div className="fade-in-up profile-summary">
                 <UserProfileSummary />
               </div>
               
@@ -165,13 +167,14 @@ const UserDashboard: React.FC = () => {
           </Grid>
 
           {/* Quick Actions Grid */}
-          <Grid responsive={{ sm: 1, md: 3 }} gap="xl">
+          <Grid responsive={{ sm: 1, md: 3 }} gap="xl" className="quick-actions">
             {quickActions.map((action, index) => (
               <Card 
                 key={action.title}
                 className="group cursor-pointer transition-all duration-300 hover:scale-105 card-glow border-0 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm overflow-hidden relative"
                 onClick={action.action}
                 style={{ animationDelay: `${0.8 + index * 0.1}s` }}
+                data-tour={action.dataTour}
               >
                 <div className="absolute inset-0 bg-gradient-to-br opacity-5 group-hover:opacity-10 transition-opacity duration-300" 
                      style={{background: `linear-gradient(135deg, ${action.gradient.split(' ')[1]}, ${action.gradient.split(' ')[3]})`}} />
