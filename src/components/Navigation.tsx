@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User as UserIcon, Brain, FileText, Briefcase, Moon, Sun, Cpu, Network } from "lucide-react";
+import { LogOut, User as UserIcon, Brain, FileText, Briefcase, Moon, Sun, Cpu } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
 const Navigation: React.FC = () => {
@@ -34,12 +33,6 @@ const Navigation: React.FC = () => {
       icon: Briefcase,
       onClick: () => navigate('/profile'),
       description: 'Manage your profile'
-    },
-    {
-      label: 'Knowledge Graph',
-      icon: Network,
-      onClick: () => navigate('/knowledge-graph'),
-      description: 'Explore connections'
     },
     {
       label: 'Resume Builder',

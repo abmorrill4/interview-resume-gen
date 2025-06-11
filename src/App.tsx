@@ -1,4 +1,3 @@
-
 import { Toaster } from "react-hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -12,7 +11,6 @@ import AuthPage from "./components/AuthPage";
 import ProfileHub from "./pages/ProfileHub";
 import InterviewPage from "./pages/InterviewPage";
 import InterviewSummaryPage from "./pages/InterviewSummaryPage";
-import KnowledgeGraphPage from "./pages/KnowledgeGraphPage";
 import NotFound from "./pages/NotFound";
 import Navigation from "./components/Navigation";
 import ErrorFallback from "./components/ErrorFallback";
@@ -70,12 +68,6 @@ const AppContent = () => {
         <Route path="/interview/summary" element={
           <ProtectedRoute>
             <InterviewSummaryPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/knowledge-graph" element={
-          <ProtectedRoute>
-            <Navigation />
-            <KnowledgeGraphPage />
           </ProtectedRoute>
         } />
         <Route path="*" element={<NotFound />} />
