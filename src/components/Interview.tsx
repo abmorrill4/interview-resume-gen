@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -213,11 +212,13 @@ const Interview: React.FC<InterviewProps> = ({
   }, [realtimeError, toast]);
 
   const handleModeSwitch = (newMode: InterviewMode) => {
-    if (mode === 'realtime' && isConnected) {
+    const currentMode = mode;
+    
+    if (currentMode === 'realtime' && isConnected) {
       disconnect();
       setInterviewStarted(false);
     }
-    if (mode === 'enhanced' && isVoiceModeEnabled) {
+    if (currentMode === 'enhanced' && isVoiceModeEnabled) {
       stop();
       setIsVoiceModeEnabled(false);
     }
