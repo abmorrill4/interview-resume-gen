@@ -65,6 +65,7 @@ export const DesignSystemShowcase: React.FC = () => {
               <Stack gap="lg">
                 {Object.entries(typography.fontSize).map(([name, config]) => {
                   const fontSize = Array.isArray(config) ? config[0] : config;
+                  const displayValue = Array.isArray(config) ? `${config[0]} / ${config[1]?.lineHeight || 'auto'}` : config;
                   return (
                     <Surface key={name} padding="md" variant="ghost">
                       <Stack direction="row" align="center" justify="between">
@@ -76,7 +77,7 @@ export const DesignSystemShowcase: React.FC = () => {
                         </Text>
                         <Stack gap="xs" align="end">
                           <Text size="xs" variant="muted" weight="medium">{name}</Text>
-                          <Text size="xs" variant="muted">{fontSize}</Text>
+                          <Text size="xs" variant="muted">{displayValue}</Text>
                         </Stack>
                       </Stack>
                     </Surface>
