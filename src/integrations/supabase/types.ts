@@ -9,6 +9,87 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      graph_nodes: {
+        Row: {
+          created_at: string | null
+          external_id: string | null
+          id: string
+          node_type: string
+          properties: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          node_type: string
+          properties?: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          node_type?: string
+          properties?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      graph_relationships: {
+        Row: {
+          created_at: string | null
+          external_id: string | null
+          from_node_id: string
+          id: string
+          properties: Json
+          relationship_type: string
+          to_node_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          external_id?: string | null
+          from_node_id: string
+          id?: string
+          properties?: Json
+          relationship_type: string
+          to_node_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          external_id?: string | null
+          from_node_id?: string
+          id?: string
+          properties?: Json
+          relationship_type?: string
+          to_node_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "graph_relationships_from_node_id_fkey"
+            columns: ["from_node_id"]
+            isOneToOne: false
+            referencedRelation: "graph_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "graph_relationships_to_node_id_fkey"
+            columns: ["to_node_id"]
+            isOneToOne: false
+            referencedRelation: "graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

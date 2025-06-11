@@ -1,8 +1,8 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useGraphDatabase } from '@/hooks/useGraphDatabase';
 
 interface UserData {
   personalInfo: {
@@ -44,6 +44,7 @@ interface Resume {
 export const useResumeStorage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { createGraphFromResume } = useGraphDatabase();
   const [loading, setLoading] = useState(false);
   const [resumes, setResumes] = useState<Resume[]>([]);
 
@@ -77,9 +78,12 @@ export const useResumeStorage = () => {
 
       if (error) throw error;
 
+      // Create graph data from resume
+      await createGraphFromResume(userData);
+
       toast({
         title: "Resume saved!",
-        description: "Your resume has been successfully saved to your account.",
+        description: "Your resume has been successfully saved and graph data created.",
       });
 
       return data.id;
@@ -94,7 +98,7 @@ export const useResumeStorage = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, createGraphFromResume]);
 
   const loadResumes = useCallback(async () => {
     if (!user) return;

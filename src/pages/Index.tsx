@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useResumeStorage } from "@/hooks/useResumeStorage";
 import EnhancedInterview from "@/components/EnhancedInterview";
 import RealtimeResume from "@/components/RealtimeResume";
+import GraphShowcase from "@/components/GraphShowcase";
 
 type AppState = 'welcome' | 'interview' | 'resume';
 
@@ -65,7 +67,7 @@ const Index = () => {
   const handleInterviewComplete = async (data: UserData) => {
     setUserData(data);
     
-    // Save resume to database
+    // Save resume to database and create graph
     await saveResume(data);
     
     setCurrentState('resume');
@@ -143,11 +145,12 @@ const Index = () => {
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Experience the future of resume creation with AI-powered enhancement, real-time updates, 
-            and interactive voice assistance. Create professional resumes that stand out.
+            interactive voice assistance, and professional knowledge graphs.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-8 max-w-6xl mx-auto">
+        {/* Original features grid */}
+        <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-6xl mx-auto">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="text-center pb-4">
               <div className="bg-blue-100 rounded-full p-3 w-fit mx-auto mb-4">
@@ -192,9 +195,7 @@ const Index = () => {
               </CardDescription>
             </CardContent>
           </Card>
-        </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-6xl mx-auto">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="text-center pb-4">
               <div className="bg-green-100 rounded-full p-3 w-fit mx-auto mb-4">
@@ -241,6 +242,11 @@ const Index = () => {
           </Card>
         </div>
 
+        {/* New Graph Database Showcase */}
+        <div className="mb-12">
+          <GraphShowcase onStartInterview={handleStartInterview} />
+        </div>
+
         <div className="text-center">
           <Button 
             onClick={handleStartInterview}
@@ -250,7 +256,7 @@ const Index = () => {
             Start Enhanced AI Interview
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
-            Experience the future of resume creation • AI-powered • Voice-enabled • Real-time updates
+            Experience the future of resume creation • AI-powered • Voice-enabled • Knowledge graphs • Real-time updates
           </p>
         </div>
       </div>
