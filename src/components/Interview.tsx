@@ -453,248 +453,249 @@ const Interview: React.FC<InterviewProps> = ({
     return achievementsText.split('\n').map(achievement => achievement.trim()).filter(Boolean);
   };
 
-  // Realtime mode UI
-  if (mode === 'realtime') {
-    if (!interviewStarted) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-          <div className="container mx-auto px-4 py-12">
-            <div className="max-w-2xl mx-auto text-center">
-              <div className="mb-8">
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-4 w-fit mx-auto mb-6">
-                  <Phone className="h-12 w-12 text-white" />
-                </div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
-                  AI Voice Interview
-                </h1>
-                <p className="text-xl text-muted-foreground mb-8">
-                  Have a natural conversation with our AI interviewer to create your resume
-                </p>
-              </div>
+  // Create separate render functions to avoid type narrowing issues
+  const renderModeButtons = () => (
+    <div className="flex gap-2">
+      <Button
+        onClick={() => handleModeSwitch('text')}
+        variant={mode === 'text' ? 'default' : 'outline'}
+        size="sm"
+      >
+        Text
+      </Button>
+      <Button
+        onClick={() => handleModeSwitch('enhanced')}
+        variant={mode === 'enhanced' ? 'default' : 'outline'}
+        size="sm"
+      >
+        Enhanced
+      </Button>
+      <Button
+        onClick={() => handleModeSwitch('realtime')}
+        variant={mode === 'realtime' ? 'default' : 'outline'}
+        size="sm"
+      >
+        Voice
+      </Button>
+    </div>
+  );
 
-              <div className="flex justify-center gap-2 mb-8">
-                <Button
-                  onClick={() => handleModeSwitch('text')}
-                  variant={mode === 'text' ? 'default' : 'outline'}
-                  size="sm"
-                >
-                  Text
-                </Button>
-                <Button
-                  onClick={() => handleModeSwitch('enhanced')}
-                  variant={mode === 'enhanced' ? 'default' : 'outline'}
-                  size="sm"
-                >
-                  Enhanced
-                </Button>
-                <Button
-                  onClick={() => handleModeSwitch('realtime')}
-                  variant={mode === 'realtime' ? 'default' : 'outline'}
-                  size="sm"
-                >
-                  Voice
-                </Button>
-              </div>
-
-              <Card className="border-0 shadow-xl mb-8">
-                <CardContent className="p-8">
-                  <div className="space-y-4 text-left">
-                    <h3 className="font-semibold text-lg mb-4">What to expect:</h3>
-                    <div className="flex items-start gap-3">
-                      <Bot className="h-5 w-5 text-blue-600 mt-1" />
-                      <div>
-                        <p className="font-medium">Natural conversation</p>
-                        <p className="text-sm text-muted-foreground">Speak naturally about your experience and career</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Mic className="h-5 w-5 text-blue-600 mt-1" />
-                      <div>
-                        <p className="font-medium">Voice-powered</p>
-                        <p className="text-sm text-muted-foreground">No typing required - just speak your answers</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Sparkles className="h-5 w-5 text-blue-600 mt-1" />
-                      <div>
-                        <p className="font-medium">Real-time profile updates</p>
-                        <p className="text-sm text-muted-foreground">Your profile hub updates automatically as you speak</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Button
-                onClick={handleStartRealtimeInterview}
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <Phone className="h-5 w-5 mr-2" />
-                Start Voice Interview
-              </Button>
-              
-              <p className="text-sm text-muted-foreground mt-4">
-                Make sure your microphone is enabled for the best experience
-              </p>
+  const renderRealtimeStartScreen = () => (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-4 w-fit mx-auto mb-6">
+              <Phone className="h-12 w-12 text-white" />
             </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+              AI Voice Interview
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8">
+              Have a natural conversation with our AI interviewer to create your resume
+            </p>
           </div>
-        </div>
-      );
-    }
 
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-3">
-                  <Phone className="h-6 w-6 text-white" />
+          <div className="flex justify-center gap-2 mb-8">
+            {renderModeButtons()}
+          </div>
+
+          <Card className="border-0 shadow-xl mb-8">
+            <CardContent className="p-8">
+              <div className="space-y-4 text-left">
+                <h3 className="font-semibold text-lg mb-4">What to expect:</h3>
+                <div className="flex items-start gap-3">
+                  <Bot className="h-5 w-5 text-blue-600 mt-1" />
+                  <div>
+                    <p className="font-medium">Natural conversation</p>
+                    <p className="text-sm text-muted-foreground">Speak naturally about your experience and career</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-foreground">Live Interview</h1>
-                  <p className="text-muted-foreground">Have a natural conversation with our AI</p>
+                <div className="flex items-start gap-3">
+                  <Mic className="h-5 w-5 text-blue-600 mt-1" />
+                  <div>
+                    <p className="font-medium">Voice-powered</p>
+                    <p className="text-sm text-muted-foreground">No typing required - just speak your answers</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-blue-600 mt-1" />
+                  <div>
+                    <p className="font-medium">Real-time profile updates</p>
+                    <p className="text-sm text-muted-foreground">Your profile hub updates automatically as you speak</p>
+                  </div>
                 </div>
               </div>
-              
-              <Button
-                onClick={handleEndRealtimeInterview}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <PhoneOff className="h-4 w-4" />
-                End Interview
-              </Button>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="flex items-center gap-4 mb-6">
-              <Badge variant={isConnected ? "default" : "secondary"} className="flex items-center gap-1">
-                <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-gray-400")} />
-                {isConnected ? "Connected" : "Disconnected"}
-              </Badge>
-              
-              <Badge variant={isListening ? "default" : "secondary"} className="flex items-center gap-1">
-                {isListening ? <Mic className="h-3 w-3" /> : <MicOff className="h-3 w-3" />}
-                {isListening ? "Listening" : "Not Listening"}
-              </Badge>
-              
-              <Badge variant={isSpeaking ? "default" : "secondary"} className="flex items-center gap-1">
-                {isSpeaking ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
-                {isSpeaking ? "AI Speaking" : "AI Quiet"}
-              </Badge>
-
-              {profileUpdates.totalUpdates > 0 && (
-                <Badge variant="default" className="flex items-center gap-1 bg-green-100 text-green-800">
-                  <TrendingUp className="h-3 w-3" />
-                  {profileUpdates.totalUpdates} Profile Updates
-                </Badge>
-              )}
-            </div>
-
-            <InterviewControls
-              isListening={isListening}
-              isSpeaking={isSpeaking}
-              isMuted={isMuted}
-              isPaused={isPaused}
-              onTogglePause={togglePause}
-              onToggleMute={toggleMute}
-              onRepeatQuestion={repeatLastQuestion}
-              isConnected={isConnected}
-            />
-
-            {profileUpdates.lastUpdate && (
-              <Card className="border-0 shadow-lg mb-6 bg-gradient-to-r from-green-50 to-blue-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">Profile Hub Updated!</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {profileUpdates.lastUpdate.experiences > 0 && (
-                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.experiences} Experience(s)</Badge>
-                    )}
-                    {profileUpdates.lastUpdate.skills > 0 && (
-                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.skills} Skill(s)</Badge>
-                    )}
-                    {profileUpdates.lastUpdate.education > 0 && (
-                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.education} Education(s)</Badge>
-                    )}
-                    {profileUpdates.lastUpdate.projects > 0 && (
-                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.projects} Project(s)</Badge>
-                    )}
-                    {profileUpdates.lastUpdate.achievements > 0 && (
-                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.achievements} Achievement(s)</Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card className="border-0 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-blue-600" />
-                  Conversation
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-96 pr-4">
-                  <div className="space-y-4">
-                    {realtimeMessages.length === 0 && (
-                      <div className="text-center text-muted-foreground py-8">
-                        <Bot className="h-12 w-12 mx-auto mb-4 text-blue-600" />
-                        <p>The AI interviewer will start the conversation shortly...</p>
-                      </div>
-                    )}
-                    
-                    {realtimeMessages.map((message, index) => (
-                      <div
-                        key={index}
-                        className={cn(
-                          "flex items-start gap-3 p-4 rounded-lg",
-                          message.role === 'user' 
-                            ? "bg-blue-50 ml-8" 
-                            : "bg-gray-50 mr-8"
-                        )}
-                      >
-                        <div className={cn(
-                          "rounded-full p-2 flex-shrink-0",
-                          message.role === 'user' 
-                            ? "bg-blue-600" 
-                            : "bg-gray-600"
-                        )}>
-                          {message.role === 'user' ? (
-                            <User className="h-4 w-4 text-white" />
-                          ) : (
-                            <Bot className="h-4 w-4 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">
-                              {message.role === 'user' ? 'You' : 'AI Interviewer'}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {message.timestamp.toLocaleTimeString()}
-                            </span>
-                          </div>
-                          <p className="text-foreground">{message.content}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
+          <Button
+            onClick={handleStartRealtimeInterview}
+            size="lg"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <Phone className="h-5 w-5 mr-2" />
+            Start Voice Interview
+          </Button>
+          
+          <p className="text-sm text-muted-foreground mt-4">
+            Make sure your microphone is enabled for the best experience
+          </p>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  // Text and Enhanced mode UI
-  return (
+  const renderRealtimeInterview = () => (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-3">
+                <Phone className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Live Interview</h1>
+                <p className="text-muted-foreground">Have a natural conversation with our AI</p>
+              </div>
+            </div>
+            
+            <Button
+              onClick={handleEndRealtimeInterview}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <PhoneOff className="h-4 w-4" />
+              End Interview
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-4 mb-6">
+            <Badge variant={isConnected ? "default" : "secondary"} className="flex items-center gap-1">
+              <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-gray-400")} />
+              {isConnected ? "Connected" : "Disconnected"}
+            </Badge>
+            
+            <Badge variant={isListening ? "default" : "secondary"} className="flex items-center gap-1">
+              {isListening ? <Mic className="h-3 w-3" /> : <MicOff className="h-3 w-3" />}
+              {isListening ? "Listening" : "Not Listening"}
+            </Badge>
+            
+            <Badge variant={isSpeaking ? "default" : "secondary"} className="flex items-center gap-1">
+              {isSpeaking ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
+              {isSpeaking ? "AI Speaking" : "AI Quiet"}
+            </Badge>
+
+            {profileUpdates.totalUpdates > 0 && (
+              <Badge variant="default" className="flex items-center gap-1 bg-green-100 text-green-800">
+                <TrendingUp className="h-3 w-3" />
+                {profileUpdates.totalUpdates} Profile Updates
+              </Badge>
+            )}
+          </div>
+
+          <InterviewControls
+            isListening={isListening}
+            isSpeaking={isSpeaking}
+            isMuted={isMuted}
+            isPaused={isPaused}
+            onTogglePause={togglePause}
+            onToggleMute={toggleMute}
+            onRepeatQuestion={repeatLastQuestion}
+            isConnected={isConnected}
+          />
+
+          {profileUpdates.lastUpdate && (
+            <Card className="border-0 shadow-lg mb-6 bg-gradient-to-r from-green-50 to-blue-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Profile Hub Updated!</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {profileUpdates.lastUpdate.experiences > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.experiences} Experience(s)</Badge>
+                  )}
+                  {profileUpdates.lastUpdate.skills > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.skills} Skill(s)</Badge>
+                  )}
+                  {profileUpdates.lastUpdate.education > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.education} Education(s)</Badge>
+                  )}
+                  {profileUpdates.lastUpdate.projects > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.projects} Project(s)</Badge>
+                  )}
+                  {profileUpdates.lastUpdate.achievements > 0 && (
+                    <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.achievements} Achievement(s)</Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="border-0 shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-blue-600" />
+                Conversation
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96 pr-4">
+                <div className="space-y-4">
+                  {realtimeMessages.length === 0 && (
+                    <div className="text-center text-muted-foreground py-8">
+                      <Bot className="h-12 w-12 mx-auto mb-4 text-blue-600" />
+                      <p>The AI interviewer will start the conversation shortly...</p>
+                    </div>
+                  )}
+                  
+                  {realtimeMessages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        "flex items-start gap-3 p-4 rounded-lg",
+                        message.role === 'user' 
+                          ? "bg-blue-50 ml-8" 
+                          : "bg-gray-50 mr-8"
+                      )}
+                    >
+                      <div className={cn(
+                        "rounded-full p-2 flex-shrink-0",
+                        message.role === 'user' 
+                          ? "bg-blue-600" 
+                          : "bg-gray-600"
+                      )}>
+                        {message.role === 'user' ? (
+                          <User className="h-4 w-4 text-white" />
+                        ) : (
+                          <Bot className="h-4 w-4 text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">
+                            {message.role === 'user' ? 'You' : 'AI Interviewer'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {message.timestamp.toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <p className="text-foreground">{message.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTextAndEnhancedMode = () => (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
@@ -704,29 +705,7 @@ const Interview: React.FC<InterviewProps> = ({
                 {mode === 'enhanced' ? 'Enhanced AI Interview' : 'AI Interview'}
               </h1>
               <div className="flex items-center gap-4">
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleModeSwitch('text')}
-                    variant={mode === 'text' ? 'default' : 'outline'}
-                    size="sm"
-                  >
-                    Text
-                  </Button>
-                  <Button
-                    onClick={() => handleModeSwitch('enhanced')}
-                    variant={mode === 'enhanced' ? 'default' : 'outline'}
-                    size="sm"
-                  >
-                    Enhanced
-                  </Button>
-                  <Button
-                    onClick={() => handleModeSwitch('realtime')}
-                    variant={mode === 'realtime' ? 'default' : 'outline'}
-                    size="sm"
-                  >
-                    Voice
-                  </Button>
-                </div>
+                {renderModeButtons()}
                 
                 {mode === 'enhanced' && (
                   <Button
@@ -904,6 +883,16 @@ const Interview: React.FC<InterviewProps> = ({
       </div>
     </div>
   );
+
+  // Main render logic - use separate functions to avoid type narrowing
+  if (mode === 'realtime') {
+    if (!interviewStarted) {
+      return renderRealtimeStartScreen();
+    }
+    return renderRealtimeInterview();
+  }
+
+  return renderTextAndEnhancedMode();
 };
 
 export default Interview;
