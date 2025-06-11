@@ -631,7 +631,9 @@ const Interview: React.FC<InterviewProps> = ({
           <CardContent>
             <p className="text-lg leading-relaxed mb-6">{currentQuestion.question}</p>
             <input
-              type={currentQuestion.type === 'text' ? 'text' : currentQuestion.type}
+              type={["text", "email", "tel", "url"].includes(currentQuestion.type)
+                ? currentQuestion.type
+                : "text"}
               value={currentResponse}
               onChange={(e) => setCurrentResponse(e.target.value)}
               placeholder="Type your answer here..."
