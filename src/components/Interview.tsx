@@ -470,7 +470,6 @@ const Interview: React.FC<InterviewProps> = ({
                 </p>
               </div>
 
-              {/* Mode Switcher */}
               <div className="flex justify-center gap-2 mb-8">
                 <Button
                   onClick={() => handleModeSwitch('text')}
@@ -567,7 +566,6 @@ const Interview: React.FC<InterviewProps> = ({
               </Button>
             </div>
 
-            {/* Status Indicators */}
             <div className="flex items-center gap-4 mb-6">
               <Badge variant={isConnected ? "default" : "secondary"} className="flex items-center gap-1">
                 <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-gray-400")} />
@@ -592,7 +590,6 @@ const Interview: React.FC<InterviewProps> = ({
               )}
             </div>
 
-            {/* Controls */}
             <InterviewControls
               isListening={isListening}
               isSpeaking={isSpeaking}
@@ -705,7 +702,6 @@ const Interview: React.FC<InterviewProps> = ({
                 {mode === 'enhanced' ? 'Enhanced AI Interview' : 'AI Interview'}
               </h1>
               <div className="flex items-center gap-4">
-                {/* Mode Switcher */}
                 <div className="flex gap-2">
                   <Button
                     onClick={() => handleModeSwitch('text')}
@@ -909,3 +905,5 @@ const Interview: React.FC<InterviewProps> = ({
 };
 
 export default Interview;
+
+}
