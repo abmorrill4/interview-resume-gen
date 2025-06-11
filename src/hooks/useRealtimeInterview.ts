@@ -1,320 +1,206 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { AudioRecorder, encodeAudioForAPI, playAudioData } from '@/utils/RealtimeAudio';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { ProfileUpdateService } from '@/services/ProfileUpdateService';
 
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
+import { useState, useCallback, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
+
+interface RealtimeInterviewOptions {
+  contextType?: string;
+  contextData?: any;
 }
 
-interface UseRealtimeInterviewReturn {
-  isConnected: boolean;
-  isListening: boolean;
-  isSpeaking: boolean;
-  isPaused: boolean;
-  isMuted: boolean;
-  isProcessingProfile: boolean;
-  messages: Message[];
-  connect: () => Promise<void>;
-  disconnect: () => void;
-  sendMessage: (message: string) => void;
-  togglePause: () => void;
-  toggleMute: () => void;
-  repeatLastQuestion: () => void;
-  error: string | null;
-  profileUpdates: {
-    totalUpdates: number;
-    lastUpdate: {
-      experiences: number;
-      skills: number;
-      education: number;
-      projects: number;
-      achievements: number;
-    } | null;
-  };
-}
-
-export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
-  const { user } = useAuth();
+export const useRealtimeInterview = (options: RealtimeInterviewOptions = {}) => {
   const [isConnected, setIsConnected] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isProcessingProfile, setIsProcessingProfile] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [profileUpdates, setProfileUpdates] = useState<{
-    totalUpdates: number;
-    lastUpdate: {
-      experiences: number;
-      skills: number;
-      education: number;
-      projects: number;
-      achievements: number;
-    } | null;
-  }>({
-    totalUpdates: 0,
-    lastUpdate: null
-  });
   
   const wsRef = useRef<WebSocket | null>(null);
-  const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const currentTranscriptRef = useRef<string>('');
-  const lastQuestionRef = useRef<string>('');
-
-  const processUserMessage = useCallback(async (content: string) => {
-    if (!user?.id || !content?.trim()) return;
-
-    setIsProcessingProfile(true);
-
-    try {
-      console.log('Processing user message for profile updates:', content);
-      
-      const result = await ProfileUpdateService.processInterviewMessage(user.id, content);
-      
-      if (result.updated) {
-        const totalNewItems = Object.values(result.addedItems).reduce((sum, count) => sum + count, 0);
-        
-        setProfileUpdates(prev => ({
-          totalUpdates: prev.totalUpdates + totalNewItems,
-          lastUpdate: result.addedItems
-        }));
-      }
-    } catch (error) {
-      console.error('Error processing user message for profile updates:', error);
-    } finally {
-      setIsProcessingProfile(false);
-    }
-  }, [user?.id]);
-
-  const handleAudioData = useCallback((audioData: Float32Array) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && !isPaused) {
-      const encodedAudio = encodeAudioForAPI(audioData);
-      wsRef.current.send(JSON.stringify({
-        type: 'input_audio_buffer.append',
-        audio: encodedAudio
-      }));
-    }
-  }, [isPaused]);
-
-  const togglePause = useCallback(() => {
-    setIsPaused(prev => {
-      const newPaused = !prev;
-      console.log(`Interview ${newPaused ? 'paused' : 'resumed'}`);
-      
-      if (newPaused) {
-        // Pause audio recording
-        if (audioRecorderRef.current) {
-          audioRecorderRef.current.stop();
-        }
-      } else {
-        // Resume audio recording
-        if (audioRecorderRef.current && isConnected) {
-          audioRecorderRef.current.start();
-        }
-      }
-      
-      return newPaused;
-    });
-  }, [isConnected]);
-
-  const toggleMute = useCallback(() => {
-    setIsMuted(prev => {
-      const newMuted = !prev;
-      console.log(`AI audio ${newMuted ? 'muted' : 'unmuted'}`);
-      
-      if (audioContextRef.current) {
-        if (newMuted) {
-          audioContextRef.current.suspend().catch(console.error);
-        } else {
-          audioContextRef.current.resume().catch(console.error);
-        }
-      }
-      
-      return newMuted;
-    });
-  }, []);
-
-  const repeatLastQuestion = useCallback(() => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-    
-    console.log('Requesting AI to repeat last question');
-    
-    wsRef.current.send(JSON.stringify({
-      type: 'conversation.item.create',
-      item: {
-        type: 'message',
-        role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text: 'Could you please repeat your last question?'
-          }
-        ]
-      }
-    }));
-    
-    wsRef.current.send(JSON.stringify({
-      type: 'response.create'
-    }));
-  }, []);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const { toast } = useToast();
 
   const connect = useCallback(async () => {
+    if (isConnected || isConnecting) return;
+    
+    setIsConnecting(true);
+    
     try {
-      setError(null);
-      console.log('Starting connection...');
-      
-      // Initialize audio context
-      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-      console.log('Audio context created');
-      
-      // Get session to ensure authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-      console.log('User authenticated');
-
-      // Connect to realtime interview edge function using the correct URL
-      const wsUrl = `wss://nmlxgczvrxkhurejqqod.functions.supabase.co/functions/v1/realtime-interview`;
-      console.log('Connecting to WebSocket:', wsUrl);
-      
-      wsRef.current = new WebSocket(wsUrl);
-
-      wsRef.current.onopen = async () => {
-        console.log('WebSocket connected');
-        setIsConnected(true);
-        
-        // Start audio recording
-        try {
-          audioRecorderRef.current = new AudioRecorder(handleAudioData);
-          await audioRecorderRef.current.start();
-          setIsListening(true);
-          console.log('Audio recording started');
-        } catch (audioError) {
-          console.error('Failed to start audio recording:', audioError);
-          setError('Microphone access denied. Please allow microphone permissions.');
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 24000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
         }
+      });
+      
+      mediaStreamRef.current = stream;
+      
+      // Set up audio context for processing
+      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+      
+      // Build WebSocket URL with context parameters
+      let wsUrl = `wss://nmlxgczvrxkhurejqqod.supabase.co/functions/v1/realtime-interview`;
+      
+      if (options.contextType && options.contextData) {
+        const params = new URLSearchParams({
+          contextType: options.contextType,
+          contextData: encodeURIComponent(JSON.stringify(options.contextData))
+        });
+        wsUrl += `?${params.toString()}`;
+      }
+      
+      // Connect to WebSocket
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      
+      ws.onopen = () => {
+        console.log('Connected to realtime interview');
+        setIsConnected(true);
+        setIsConnecting(false);
+        
+        toast({
+          title: "Connected",
+          description: "Voice interview is ready. You can start speaking.",
+        });
       };
-
-      wsRef.current.onmessage = async (event) => {
+      
+      ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log('Received message:', data.type);
-
+        
+        // Handle different message types
         switch (data.type) {
           case 'session.created':
-            console.log('Session created successfully');
-            break;
-            
-          case 'session.updated':
-            console.log('Session updated successfully');
-            break;
-            
-          case 'input_audio_buffer.speech_started':
-            console.log('User started speaking');
-            break;
-            
-          case 'input_audio_buffer.speech_stopped':
-            console.log('User stopped speaking');
+            console.log('Session created');
             break;
             
           case 'response.audio.delta':
-            if (data.delta && audioContextRef.current && !isMuted) {
-              const binaryString = atob(data.delta);
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-              await playAudioData(audioContextRef.current, bytes);
-              setIsSpeaking(true);
-            }
+            setIsSpeaking(true);
+            // Handle audio playback here if needed
             break;
             
           case 'response.audio.done':
-            console.log('AI finished speaking');
             setIsSpeaking(false);
             break;
             
-          case 'conversation.item.input_audio_transcription.completed':
-            if (data.transcript) {
-              const userMessage = {
-                role: 'user' as const,
-                content: data.transcript,
-                timestamp: new Date()
-              };
-              
-              setMessages(prev => [...prev, userMessage]);
-              
-              // Process the user message for profile updates
-              await processUserMessage(data.transcript);
-            }
+          case 'response.text.delta':
+            // Update messages with streaming text
+            setMessages(prev => {
+              const lastMessage = prev[prev.length - 1];
+              if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isStreaming) {
+                return [
+                  ...prev.slice(0, -1),
+                  { ...lastMessage, content: lastMessage.content + data.delta }
+                ];
+              } else {
+                return [...prev, { role: 'assistant', content: data.delta, isStreaming: true }];
+              }
+            });
             break;
             
-          case 'response.audio_transcript.delta':
-            if (data.delta) {
-              currentTranscriptRef.current += data.delta;
-            }
+          case 'response.text.done':
+            setMessages(prev => {
+              const lastMessage = prev[prev.length - 1];
+              if (lastMessage && lastMessage.isStreaming) {
+                return [...prev.slice(0, -1), { ...lastMessage, isStreaming: false }];
+              }
+              return prev;
+            });
             break;
             
-          case 'response.audio_transcript.done':
-            if (currentTranscriptRef.current) {
-              const assistantMessage = {
-                role: 'assistant' as const,
-                content: currentTranscriptRef.current,
-                timestamp: new Date()
-              };
-              
-              setMessages(prev => [...prev, assistantMessage]);
-              lastQuestionRef.current = currentTranscriptRef.current;
-              currentTranscriptRef.current = '';
-            }
+          case 'input_audio_buffer.speech_started':
+            setIsRecording(true);
+            break;
+            
+          case 'input_audio_buffer.speech_stopped':
+            setIsRecording(false);
             break;
             
           case 'error':
-            console.error('WebSocket error:', data.error);
-            // Fix: Extract the error message properly
-            const errorMessage = typeof data.error === 'object' && data.error !== null 
-              ? data.error.message || JSON.stringify(data.error)
-              : String(data.error);
-            setError(errorMessage);
+            console.error('Interview error:', data.error);
+            toast({
+              title: "Interview Error",
+              description: data.error,
+              variant: "destructive",
+            });
             break;
         }
       };
-
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setError('Connection failed. Please try again.');
-      };
-
-      wsRef.current.onclose = (event) => {
-        console.log('WebSocket closed:', event.code, event.reason);
+      
+      ws.onclose = () => {
+        console.log('Disconnected from realtime interview');
         setIsConnected(false);
-        setIsListening(false);
+        setIsConnecting(false);
         setIsSpeaking(false);
-        
-        if (event.code !== 1000) {
-          setError('Connection lost unexpectedly');
-        }
+        setIsRecording(false);
       };
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to connect';
-      console.error('Error connecting to realtime interview:', err);
-      setError(errorMessage);
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setIsConnecting(false);
+        toast({
+          title: "Connection Error",
+          description: "Failed to connect to the interview service.",
+          variant: "destructive",
+        });
+      };
+      
+      // Set up audio processing
+      processor.onaudioprocess = (e) => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        
+        const inputData = e.inputBuffer.getChannelData(0);
+        const audioData = new Int16Array(inputData.length);
+        
+        for (let i = 0; i < inputData.length; i++) {
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          audioData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        
+        // Calculate audio level for visual feedback
+        const sum = inputData.reduce((acc, val) => acc + Math.abs(val), 0);
+        setAudioLevel(sum / inputData.length);
+        
+        // Send audio data to server
+        const base64Audio = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(audioData.buffer))));
+        ws.send(JSON.stringify({
+          type: 'input_audio_buffer.append',
+          audio: base64Audio
+        }));
+      };
+      
+      source.connect(processor);
+      processor.connect(audioContextRef.current.destination);
+      
+    } catch (error) {
+      console.error('Failed to connect:', error);
+      setIsConnecting(false);
+      toast({
+        title: "Microphone Error",
+        description: "Failed to access microphone. Please check permissions.",
+        variant: "destructive",
+      });
     }
-  }, [handleAudioData, processUserMessage, isMuted]);
+  }, [isConnected, isConnecting, options.contextType, options.contextData, toast]);
 
   const disconnect = useCallback(() => {
-    console.log('Disconnecting...');
+    // Clean up WebSocket
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
     
-    if (audioRecorderRef.current) {
-      audioRecorderRef.current.stop();
-      audioRecorderRef.current = null;
+    // Clean up audio resources
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
     }
     
     if (audioContextRef.current) {
@@ -322,67 +208,53 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
       audioContextRef.current = null;
     }
     
-    if (wsRef.current) {
-      wsRef.current.close(1000, 'User disconnected');
-      wsRef.current = null;
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
     }
     
     setIsConnected(false);
-    setIsListening(false);
+    setIsRecording(false);
     setIsSpeaking(false);
-    setIsPaused(false);
-    setIsMuted(false);
-    setError(null);
+    setAudioLevel(0);
   }, []);
 
-  const sendMessage = useCallback((message: string) => {
+  const sendMessage = useCallback((text: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      console.warn('WebSocket not connected, cannot send message');
+      toast({
+        title: "Not Connected",
+        description: "Please connect to the interview first.",
+        variant: "destructive",
+      });
       return;
     }
-    
-    console.log('Sending message to AI:', message);
-    
+
+    // Add user message to chat
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+
+    // Send text input to server
     wsRef.current.send(JSON.stringify({
       type: 'conversation.item.create',
       item: {
         type: 'message',
         role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text: message
-          }
-        ]
+        content: [{ type: 'input_text', text }]
       }
     }));
-    
-    wsRef.current.send(JSON.stringify({
-      type: 'response.create'
-    }));
-  }, []);
 
-  useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, [disconnect]);
+    // Trigger response generation
+    wsRef.current.send(JSON.stringify({ type: 'response.create' }));
+  }, [toast]);
 
   return {
     isConnected,
-    isListening,
-    isSpeaking,
-    isPaused,
-    isMuted,
-    isProcessingProfile,
+    isConnecting,
     messages,
+    audioLevel,
+    isRecording,
+    isSpeaking,
     connect,
     disconnect,
-    sendMessage,
-    togglePause,
-    toggleMute,
-    repeatLastQuestion,
-    error,
-    profileUpdates
+    sendMessage
   };
 };

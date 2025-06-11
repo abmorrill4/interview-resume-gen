@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { useProfileData } from '@/hooks/useProfileData';
 import { format } from 'date-fns';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import TargetedInterviewTrigger from '@/components/interview/TargetedInterviewTrigger';
 
 interface ExperienceFormData {
   job_title: string;
@@ -252,6 +254,13 @@ const ExperiencePage: React.FC = () => {
                   </div>
                   
                   <div className="flex gap-2 ml-4">
+                    <TargetedInterviewTrigger
+                      contextType="experience_deep_dive"
+                      contextData={experience}
+                      title={`Deep Dive: ${experience.job_title}`}
+                      description="Expand on this work experience with AI-guided questions about your responsibilities, achievements, and impact."
+                    />
+                    
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button

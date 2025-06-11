@@ -137,6 +137,30 @@ export type Database = {
           },
         ]
       }
+      interview_contexts: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          system_prompt: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          system_prompt: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          system_prompt?: string
+        }
+        Relationships: []
+      }
       interview_transcripts: {
         Row: {
           ai_extracted_json: Json | null

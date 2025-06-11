@@ -37,6 +37,10 @@ serve(async (req) => {
     return new Response("Expected websocket", { status: 426 });
   }
 
+  const url = new URL(req.url);
+  const contextType = url.searchParams.get('contextType');
+  const contextData = url.searchParams.get('contextData');
+
   const { socket, response } = Deno.upgradeWebSocket(req);
   
   let openaiWs: WebSocket | null = null;
@@ -48,20 +52,52 @@ serve(async (req) => {
       // Initialize Supabase client
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       
-      // Fetch the AI interviewer system prompt
-      const { data: promptData, error: promptError } = await supabase
-        .from('system_prompts')
-        .select('prompt')
-        .eq('name', 'ai_interviewer')
-        .single();
+      let systemPrompt = 'You are a helpful AI interviewer.';
 
-      if (promptError) {
-        console.error('Error fetching system prompt:', promptError);
-        socket.send(JSON.stringify({ type: 'error', error: 'Failed to load interview configuration' }));
-        return;
+      if (contextType && contextData) {
+        // Fetch the specific context prompt
+        const { data: contextPromptData, error: contextError } = await supabase
+          .from('interview_contexts')
+          .select('system_prompt')
+          .eq('name', contextType)
+          .single();
+
+        if (contextError) {
+          console.error('Error fetching context prompt:', contextError);
+        } else if (contextPromptData) {
+          const parsedContextData = JSON.parse(decodeURIComponent(contextData));
+          let contextualInfo = '';
+          
+          if (contextType === 'experience_deep_dive') {
+            contextualInfo = `Job Title: ${parsedContextData.job_title}, Company: ${parsedContextData.company_name}, Duration: ${parsedContextData.start_date} to ${parsedContextData.end_date || 'Present'}`;
+            if (parsedContextData.description) {
+              contextualInfo += `, Current Description: ${parsedContextData.description}`;
+            }
+          } else if (contextType === 'skills_assessment') {
+            const skillNames = Array.isArray(parsedContextData) 
+              ? parsedContextData.map((skill: any) => skill.name || skill).join(', ')
+              : parsedContextData.name || parsedContextData;
+            contextualInfo = `Skills to assess: ${skillNames}`;
+          }
+
+          systemPrompt = `${contextPromptData.system_prompt}${contextualInfo}`;
+          console.log('Using contextual prompt for:', contextType);
+        }
+      } else {
+        // Fetch the default AI interviewer system prompt
+        const { data: promptData, error: promptError } = await supabase
+          .from('system_prompts')
+          .select('prompt')
+          .eq('name', 'ai_interviewer')
+          .single();
+
+        if (promptError) {
+          console.error('Error fetching system prompt:', promptError);
+        } else if (promptData) {
+          systemPrompt = promptData.prompt;
+        }
       }
 
-      const systemPrompt = promptData?.prompt || 'You are a helpful AI interviewer.';
       console.log('Loaded system prompt from database');
 
       // Connect to OpenAI Realtime API

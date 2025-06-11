@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useResumeStorage } from "@/hooks/useResumeStorage";
 import Interview, { InterviewMode } from "@/components/Interview";
 
@@ -36,8 +36,17 @@ interface UserData {
 
 const InterviewPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { saveResume } = useResumeStorage();
-  const [interviewMode, setInterviewMode] = useState<InterviewMode>('dynamic');
+  
+  // Check if this is a targeted interview from navigation state
+  const isTargetedInterview = location.state?.mode === 'targeted';
+  const contextType = location.state?.contextType;
+  const contextData = location.state?.contextData;
+  
+  const [interviewMode, setInterviewMode] = useState<InterviewMode>(
+    isTargetedInterview ? 'realtime' : 'dynamic'
+  );
   const [userData] = useState<UserData>({
     personalInfo: {
       fullName: '',
@@ -51,6 +60,13 @@ const InterviewPage: React.FC = () => {
     achievements: []
   });
 
+  useEffect(() => {
+    // If this is a targeted interview, force realtime mode
+    if (isTargetedInterview) {
+      setInterviewMode('realtime');
+    }
+  }, [isTargetedInterview]);
+
   const handleInterviewComplete = async (data: UserData, messages: Message[]) => {
     // Save interview data to database
     await saveResume(data, messages);
@@ -59,7 +75,10 @@ const InterviewPage: React.FC = () => {
     navigate('/interview/summary', { 
       state: { 
         messages,
-        userData: data 
+        userData: data,
+        isTargeted: isTargetedInterview,
+        contextType,
+        contextData
       } 
     });
   };
@@ -70,6 +89,9 @@ const InterviewPage: React.FC = () => {
       initialData={userData}
       mode={interviewMode}
       onModeChange={setInterviewMode}
+      contextType={contextType}
+      contextData={contextData}
+      isTargeted={isTargetedInterview}
     />
   );
 };
