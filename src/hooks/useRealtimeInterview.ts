@@ -44,28 +44,39 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
   const connect = useCallback(async () => {
     try {
       setError(null);
+      console.log('Starting connection...');
       
       // Initialize audio context
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      console.log('Audio context created');
       
-      // Get project reference for WebSocket URL
+      // Get session to ensure authentication
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('Not authenticated');
       }
+      console.log('User authenticated');
 
-      // Connect to realtime interview edge function
-      const wsUrl = `wss://${window.location.hostname.replace('https://', '').replace('http://', '')}.functions.supabase.co/functions/v1/realtime-interview`;
+      // Connect to realtime interview edge function using the correct URL
+      const wsUrl = `wss://nmlxgczvrxkhurejqqod.functions.supabase.co/functions/v1/realtime-interview`;
+      console.log('Connecting to WebSocket:', wsUrl);
+      
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = async () => {
-        console.log('Connected to realtime interview');
+        console.log('WebSocket connected');
         setIsConnected(true);
         
         // Start audio recording
-        audioRecorderRef.current = new AudioRecorder(handleAudioData);
-        await audioRecorderRef.current.start();
-        setIsListening(true);
+        try {
+          audioRecorderRef.current = new AudioRecorder(handleAudioData);
+          await audioRecorderRef.current.start();
+          setIsListening(true);
+          console.log('Audio recording started');
+        } catch (audioError) {
+          console.error('Failed to start audio recording:', audioError);
+          setError('Microphone access denied. Please allow microphone permissions.');
+        }
       };
 
       wsRef.current.onmessage = async (event) => {
@@ -142,24 +153,30 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
 
       wsRef.current.onerror = (error) => {
         console.error('WebSocket error:', error);
-        setError('Connection failed');
+        setError('Connection failed. Please try again.');
       };
 
-      wsRef.current.onclose = () => {
-        console.log('WebSocket closed');
+      wsRef.current.onclose = (event) => {
+        console.log('WebSocket closed:', event.code, event.reason);
         setIsConnected(false);
         setIsListening(false);
         setIsSpeaking(false);
+        
+        if (event.code !== 1000) {
+          setError('Connection lost unexpectedly');
+        }
       };
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to connect';
-      setError(errorMessage);
       console.error('Error connecting to realtime interview:', err);
+      setError(errorMessage);
     }
   }, [handleAudioData]);
 
   const disconnect = useCallback(() => {
+    console.log('Disconnecting...');
+    
     if (audioRecorderRef.current) {
       audioRecorderRef.current.stop();
       audioRecorderRef.current = null;
@@ -171,7 +188,7 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
     }
     
     if (wsRef.current) {
-      wsRef.current.close();
+      wsRef.current.close(1000, 'User disconnected');
       wsRef.current = null;
     }
     
