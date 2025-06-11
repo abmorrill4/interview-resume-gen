@@ -348,5 +348,3 @@ const RealtimeInterview: React.FC<RealtimeInterviewProps> = ({ onComplete, initi
 };
 
 export default RealtimeInterview;
-
-}
