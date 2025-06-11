@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AudioRecorder, encodeAudioForAPI, playAudioData } from '@/utils/RealtimeAudio';
 import { supabase } from '@/integrations/supabase/client';
@@ -140,9 +141,10 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
       console.log(`AI audio ${newMuted ? 'muted' : 'unmuted'}`);
       
       if (audioContextRef.current) {
-        audioContextRef.current.destination.context.suspend();
-        if (!newMuted) {
-          audioContextRef.current.destination.context.resume();
+        if (newMuted) {
+          audioContextRef.current.suspend().catch(console.error);
+        } else {
+          audioContextRef.current.resume().catch(console.error);
         }
       }
       
