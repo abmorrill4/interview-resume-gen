@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { useRealtimeInterview } from "@/hooks/useRealtimeInterview";
 import DynamicQuestion from "@/components/interview/DynamicQuestion";
 import { DynamicQuestion as QuestionType, InterviewResponse } from '@/types/InterviewTypes';
 
-export type InterviewMode = 'structured' | 'dynamic' | 'voice';
+export type InterviewMode = 'structured' | 'dynamic' | 'voice' | 'realtime';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -47,13 +46,19 @@ interface InterviewProps {
   initialData: UserData;
   mode: InterviewMode;
   onModeChange: (mode: InterviewMode) => void;
+  contextType?: string;
+  contextData?: any;
+  isTargeted?: boolean;
 }
 
 const Interview: React.FC<InterviewProps> = ({
   onComplete,
   initialData,
   mode,
-  onModeChange
+  onModeChange,
+  contextType,
+  contextData,
+  isTargeted
 }) => {
   const { toast } = useToast();
   const [userData, setUserData] = useState<UserData>(initialData);
@@ -66,17 +71,21 @@ const Interview: React.FC<InterviewProps> = ({
   const [responses, setResponses] = useState<InterviewResponse[]>([]);
   const [currentResponse, setCurrentResponse] = useState<any>('');
 
-  // Voice interview state
+  // Voice interview state - add default values for missing properties
   const {
     isConnected,
-    isListening,
+    isConnecting,
     isSpeaking,
+    isRecording,
     connect,
     disconnect,
     sendMessage,
-    messages: voiceMessages,
-    error: voiceError
-  } = useRealtimeInterview();
+    messages: voiceMessages
+  } = useRealtimeInterview({ contextType, contextData });
+
+  // Add fallback values for missing properties
+  const isListening = isRecording;
+  const error = null;
 
   const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -143,20 +152,20 @@ const Interview: React.FC<InterviewProps> = ({
 
   // Voice interview effects
   useEffect(() => {
-    if (mode === 'voice' && !isConnected) {
+    if ((mode === 'voice' || mode === 'realtime') && !isConnected) {
       handleVoiceConnect();
     }
   }, [mode, isConnected]);
 
   useEffect(() => {
-    if (voiceError) {
+    if (error) {
       toast({
         title: "Voice Interview Error",
-        description: voiceError,
+        description: error,
         variant: "destructive"
       });
     }
-  }, [voiceError, toast]);
+  }, [error, toast]);
 
   const initializeDynamicQuestions = () => {
     // Sample dynamic questions - in a real app, these would come from the DynamicInterviewService
@@ -311,12 +320,12 @@ const Interview: React.FC<InterviewProps> = ({
   const handleComplete = () => {
     setIsCompleted(true);
     
-    if (mode === 'voice') {
+    if (mode === 'voice' || mode === 'realtime') {
       disconnect();
     }
 
     const finalData = mode === 'dynamic' ? convertResponsesToUserData() : userData;
-    const finalMessages = mode === 'voice' ? voiceMessages.map(msg => ({
+    const finalMessages = (mode === 'voice' || mode === 'realtime') ? voiceMessages.map(msg => ({
       role: msg.role,
       content: msg.content,
       timestamp: new Date()
@@ -380,7 +389,7 @@ const Interview: React.FC<InterviewProps> = ({
   };
 
   const canGoNext = () => {
-    if (mode === 'voice') return false;
+    if (mode === 'voice' || mode === 'realtime') return false;
     return currentResponse && String(currentResponse).trim().length > 0;
   };
 
@@ -406,7 +415,7 @@ const Interview: React.FC<InterviewProps> = ({
     );
   }
 
-  if (mode === 'voice') {
+  if (mode === 'voice' || mode === 'realtime') {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -654,3 +663,5 @@ const Interview: React.FC<InterviewProps> = ({
 };
 
 export default Interview;
+
+}
