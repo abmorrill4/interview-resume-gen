@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -74,6 +73,44 @@ export const useResumeStorage = () => {
   const [loading, setLoading] = useState(false);
   const [resumes, setResumes] = useState<Resume[]>([]);
 
+  const ensureUserExists = useCallback(async () => {
+    if (!user) return false;
+
+    try {
+      // Check if user exists in users table
+      const { data: existingUser, error: selectError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (selectError && selectError.code === 'PGRST116') {
+        // User doesn't exist, create them
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email || '',
+            full_name: user.user_metadata?.full_name || ''
+          });
+
+        if (insertError) {
+          console.error('Error creating user:', insertError);
+          return false;
+        }
+        console.log('User created successfully');
+      } else if (selectError) {
+        console.error('Error checking user existence:', selectError);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error ensuring user exists:', error);
+      return false;
+    }
+  }, [user]);
+
   const saveResume = useCallback(async (userData: UserData, interviewTranscript?: any): Promise<string | null> => {
     if (!user) {
       toast({
@@ -87,7 +124,13 @@ export const useResumeStorage = () => {
     setLoading(true);
     
     try {
-      // Insert into interview_transcripts table since that's what exists in the schema
+      // Ensure user exists in the users table
+      const userExists = await ensureUserExists();
+      if (!userExists) {
+        throw new Error('Failed to create or verify user');
+      }
+
+      // Insert into interview_transcripts table
       const { data, error } = await supabase
         .from('interview_transcripts')
         .insert({
@@ -135,7 +178,7 @@ export const useResumeStorage = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, createGraphFromResume]);
+  }, [user, toast, createGraphFromResume, ensureUserExists]);
 
   const loadResumes = useCallback(async () => {
     if (!user) return;

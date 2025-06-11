@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { User, Bot, FileText, Sparkles, ArrowLeft, Loader2 } from "lucide-react";
+import { User, Bot, FileText, Sparkles, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ const InterviewSummary: React.FC<InterviewSummaryProps> = ({ messages, onStartOv
   const { toast } = useToast();
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     generateAISummary();
@@ -42,11 +43,20 @@ const InterviewSummary: React.FC<InterviewSummaryProps> = ({ messages, onStartOv
   const generateAISummary = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      if (!messages || messages.length === 0) {
+        setError('No interview data available to analyze');
+        setLoading(false);
+        return;
+      }
       
       // Prepare the transcript for AI analysis
       const transcript = messages.map(msg => 
         `${msg.role === 'user' ? 'User' : 'AI Interviewer'}: ${msg.content}`
       ).join('\n\n');
+
+      console.log('Generating AI summary with transcript length:', transcript.length);
 
       const { data, error } = await supabase.functions.invoke('enhance-content', {
         body: {
@@ -73,12 +83,22 @@ Please respond in JSON format with this structure:
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (!data || !data.enhancedContent) {
+        throw new Error('No enhanced content received from AI');
+      }
+
+      console.log('Received enhanced content:', data.enhancedContent);
 
       try {
         const parsedSummary = JSON.parse(data.enhancedContent);
         setAiSummary(parsedSummary);
       } catch (parseError) {
+        console.warn('Failed to parse JSON, using fallback structure:', parseError);
         // Fallback if JSON parsing fails
         setAiSummary({
           narrativeSummary: data.enhancedContent,
@@ -91,15 +111,39 @@ Please respond in JSON format with this structure:
       }
     } catch (error) {
       console.error('Error generating AI summary:', error);
+      setError('Failed to generate AI summary. This might be due to a temporary issue with the AI service.');
       toast({
         title: "Summary Generation Failed",
-        description: "Could not generate AI summary. Please try again.",
+        description: "Could not generate AI summary. The transcript is still available below.",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
+
+  // Generate fallback summary from the transcript
+  const generateFallbackSummary = () => {
+    if (!messages || messages.length === 0) return null;
+
+    const userMessages = messages.filter(msg => msg.role === 'user' && msg.content.trim());
+    const workContent = userMessages.find(msg => 
+      msg.content.toLowerCase().includes('work') || 
+      msg.content.toLowerCase().includes('job') ||
+      msg.content.toLowerCase().includes('company')
+    )?.content || '';
+
+    return {
+      narrativeSummary: `Based on the interview conversation, the candidate discussed their professional background and experience. ${workContent ? `They mentioned: "${workContent.substring(0, 200)}..."` : 'The conversation covered various aspects of their career journey.'}`,
+      keyChanges: {
+        new: userMessages.length > 0 ? [`Discussed ${userMessages.length} topics during the interview`] : [],
+        updated: [],
+        unchanged: ['Professional interview conducted']
+      }
+    };
+  };
+
+  const displaySummary = aiSummary || generateFallbackSummary();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -201,9 +245,22 @@ Please respond in JSON format with this structure:
                       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                       <span className="ml-2 text-muted-foreground">Generating AI summary...</span>
                     </div>
-                  ) : aiSummary ? (
+                  ) : error ? (
+                    <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-800">AI Summary Unavailable</p>
+                        <p className="text-sm text-yellow-700 mt-1">{error}</p>
+                        {displaySummary && (
+                          <div className="mt-3 text-sm text-gray-700">
+                            <p><strong>Fallback Summary:</strong> {displaySummary.narrativeSummary}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : displaySummary ? (
                     <div className="prose prose-sm max-w-none">
-                      <p className="text-foreground leading-relaxed">{aiSummary.narrativeSummary}</p>
+                      <p className="text-foreground leading-relaxed">{displaySummary.narrativeSummary}</p>
                     </div>
                   ) : (
                     <p className="text-muted-foreground">Unable to generate summary</p>
@@ -224,7 +281,7 @@ Please respond in JSON format with this structure:
                     <div className="flex items-center justify-center py-4">
                       <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                     </div>
-                  ) : aiSummary ? (
+                  ) : displaySummary ? (
                     <div className="space-y-4">
                       {/* New Information */}
                       <div>
@@ -235,7 +292,7 @@ Please respond in JSON format with this structure:
                           <span className="text-sm font-medium">Recently Acquired</span>
                         </div>
                         <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                          {aiSummary.keyChanges.new.map((item, index) => (
+                          {displaySummary.keyChanges.new.map((item, index) => (
                             <li key={index} className="flex items-start gap-2">
                               <span className="text-green-600 mt-1">•</span>
                               {item}
@@ -255,7 +312,7 @@ Please respond in JSON format with this structure:
                           <span className="text-sm font-medium">Enhanced Experience</span>
                         </div>
                         <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                          {aiSummary.keyChanges.updated.map((item, index) => (
+                          {displaySummary.keyChanges.updated.map((item, index) => (
                             <li key={index} className="flex items-start gap-2">
                               <span className="text-blue-600 mt-1">•</span>
                               {item}
@@ -275,7 +332,7 @@ Please respond in JSON format with this structure:
                           <span className="text-sm font-medium">Established Background</span>
                         </div>
                         <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                          {aiSummary.keyChanges.unchanged.map((item, index) => (
+                          {displaySummary.keyChanges.unchanged.map((item, index) => (
                             <li key={index} className="flex items-start gap-2">
                               <span className="text-gray-600 mt-1">•</span>
                               {item}
