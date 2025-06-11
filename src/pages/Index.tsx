@@ -6,10 +6,9 @@ import { useResumeStorage } from "@/hooks/useResumeStorage";
 import RealtimeInterview from "@/components/RealtimeInterview";
 import InterviewSummary from "@/components/InterviewSummary";
 import Navigation from "@/components/Navigation";
-import LandingHero from "@/components/LandingHero";
-import ModuleShowcase from "@/components/ModuleShowcase";
+import UserDashboard from "@/components/UserDashboard";
 
-type AppState = 'welcome' | 'interview' | 'summary';
+type AppState = 'dashboard' | 'interview' | 'summary';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -45,7 +44,7 @@ const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { saveResume } = useResumeStorage();
-  const [currentState, setCurrentState] = useState<AppState>('welcome');
+  const [currentState, setCurrentState] = useState<AppState>('dashboard');
   const [interviewMessages, setInterviewMessages] = useState<Message[]>([]);
   const [userData, setUserData] = useState<UserData>({
     personalInfo: {
@@ -80,8 +79,8 @@ const Index = () => {
     setCurrentState('summary');
   };
 
-  const handleStartOver = () => {
-    setCurrentState('welcome');
+  const handleBackToDashboard = () => {
+    setCurrentState('dashboard');
     setInterviewMessages([]);
     setUserData({
       personalInfo: { fullName: '', email: '', phone: '', linkedin: '' },
@@ -94,9 +93,9 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -112,14 +111,13 @@ const Index = () => {
   }
 
   if (currentState === 'summary') {
-    return <InterviewSummary messages={interviewMessages} onStartOver={handleStartOver} />;
+    return <InterviewSummary messages={interviewMessages} onStartOver={handleBackToDashboard} />;
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Navigation />
-      <LandingHero onStartInterview={handleStartInterview} />
-      <ModuleShowcase onStartInterview={handleStartInterview} />
+      <UserDashboard onStartInterview={handleStartInterview} />
     </div>
   );
 };
