@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'react-hot-toast';
 
 interface ExtractedProfileData {
   experiences?: Array<{
@@ -37,6 +37,10 @@ interface ExtractedProfileData {
 
 export class ProfileUpdateService {
   private static async extractDataFromTranscript(transcript: string): Promise<ExtractedProfileData> {
+    const loadingToast = toast.loading('Analyzing your response for profile updates...', {
+      duration: 10000
+    });
+
     try {
       console.log('Extracting profile data from transcript...');
       
@@ -64,8 +68,11 @@ Respond ONLY with valid JSON in this exact format:
         }
       });
 
+      toast.dismiss(loadingToast);
+
       if (error) {
         console.error('Error calling enhance-content function:', error);
+        toast.error('Failed to analyze your response. Please try again.');
         return {};
       }
 
@@ -80,10 +87,13 @@ Respond ONLY with valid JSON in this exact format:
         return parsed;
       } catch (parseError) {
         console.error('Failed to parse enhanced content as JSON:', parseError);
+        toast.error('Failed to process your response. Please try again.');
         return {};
       }
     } catch (error) {
+      toast.dismiss(loadingToast);
       console.error('Error extracting profile data:', error);
+      toast.error('An error occurred while analyzing your response.');
       return {};
     }
   }
@@ -134,6 +144,7 @@ Respond ONLY with valid JSON in this exact format:
 
       if (error) {
         console.error('Error adding experience:', error);
+        toast.error(`Failed to add experience: ${experience.job_title}`);
         return false;
       }
 
@@ -141,6 +152,7 @@ Respond ONLY with valid JSON in this exact format:
       return true;
     } catch (error) {
       console.error('Error adding experience:', error);
+      toast.error(`Failed to add experience: ${experience.job_title}`);
       return false;
     }
   }
@@ -156,6 +168,7 @@ Respond ONLY with valid JSON in this exact format:
 
       if (skillSelectError) {
         console.error('Error checking skill:', skillSelectError);
+        toast.error(`Failed to add skill: ${skill.name}`);
         return false;
       }
 
@@ -174,6 +187,7 @@ Respond ONLY with valid JSON in this exact format:
 
         if (skillInsertError) {
           console.error('Error creating skill:', skillInsertError);
+          toast.error(`Failed to add skill: ${skill.name}`);
           return false;
         }
         skillId = newSkill.id;
@@ -193,6 +207,7 @@ Respond ONLY with valid JSON in this exact format:
 
       if (userSkillError) {
         console.error('Error adding user skill:', userSkillError);
+        toast.error(`Failed to add skill: ${skill.name}`);
         return false;
       }
 
@@ -200,6 +215,7 @@ Respond ONLY with valid JSON in this exact format:
       return true;
     } catch (error) {
       console.error('Error adding skill:', error);
+      toast.error(`Failed to add skill: ${skill.name}`);
       return false;
     }
   }
@@ -227,124 +243,174 @@ Respond ONLY with valid JSON in this exact format:
       };
     }
 
-    const extractedData = await this.extractDataFromTranscript(message);
-    const addedItems = {
-      experiences: 0,
-      skills: 0,
-      education: 0,
-      projects: 0,
-      achievements: 0
-    };
+    const updateToast = toast.loading('Updating your profile...', {
+      duration: 15000
+    });
 
-    // Process experiences
-    if (extractedData.experiences?.length) {
-      for (const experience of extractedData.experiences) {
-        if (experience.job_title && experience.company_name) {
-          const exists = await this.checkExistingExperience(userId, experience.job_title, experience.company_name);
-          if (!exists) {
-            const added = await this.addNewExperience(userId, experience);
-            if (added) addedItems.experiences++;
-          }
-        }
-      }
-    }
+    try {
+      const extractedData = await this.extractDataFromTranscript(message);
+      const addedItems = {
+        experiences: 0,
+        skills: 0,
+        education: 0,
+        projects: 0,
+        achievements: 0
+      };
 
-    // Process skills
-    if (extractedData.skills?.length) {
-      for (const skill of extractedData.skills) {
-        if (skill.name) {
-          const exists = await this.checkExistingSkill(userId, skill.name);
-          if (!exists) {
-            const added = await this.addNewSkill(userId, skill);
-            if (added) addedItems.skills++;
-          }
-        }
-      }
-    }
-
-    // Process education (simplified for now)
-    if (extractedData.education?.length) {
-      for (const edu of extractedData.education) {
-        if (edu.degree_name && edu.institution_name && edu.field_of_study) {
-          try {
-            const { error } = await supabase
-              .from('education')
-              .insert({
-                user_id: userId,
-                degree_name: edu.degree_name,
-                institution_name: edu.institution_name,
-                field_of_study: edu.field_of_study,
-                completion_date: edu.completion_date || null
-              });
-
-            if (!error) {
-              addedItems.education++;
-              console.log('Successfully added new education:', edu.degree_name);
+      // Process experiences
+      if (extractedData.experiences?.length) {
+        for (const experience of extractedData.experiences) {
+          if (experience.job_title && experience.company_name) {
+            const exists = await this.checkExistingExperience(userId, experience.job_title, experience.company_name);
+            if (!exists) {
+              const added = await this.addNewExperience(userId, experience);
+              if (added) addedItems.experiences++;
             }
-          } catch (error) {
-            console.error('Error adding education:', error);
           }
         }
       }
-    }
 
-    // Process projects (simplified for now)
-    if (extractedData.projects?.length) {
-      for (const project of extractedData.projects) {
-        if (project.project_name) {
-          try {
-            const { error } = await supabase
-              .from('projects')
-              .insert({
-                user_id: userId,
-                project_name: project.project_name,
-                description: project.description || null,
-                start_date: project.start_date || null,
-                end_date: project.end_date || null
-              });
-
-            if (!error) {
-              addedItems.projects++;
-              console.log('Successfully added new project:', project.project_name);
+      // Process skills
+      if (extractedData.skills?.length) {
+        for (const skill of extractedData.skills) {
+          if (skill.name) {
+            const exists = await this.checkExistingSkill(userId, skill.name);
+            if (!exists) {
+              const added = await this.addNewSkill(userId, skill);
+              if (added) addedItems.skills++;
             }
-          } catch (error) {
-            console.error('Error adding project:', error);
           }
         }
       }
-    }
 
-    // Process achievements (simplified for now)
-    if (extractedData.achievements?.length) {
-      for (const achievement of extractedData.achievements) {
-        if (achievement.description) {
-          try {
-            const { error } = await supabase
-              .from('achievements')
-              .insert({
-                user_id: userId,
-                description: achievement.description,
-                date_achieved: achievement.date_achieved || null,
-                metric_value: achievement.metric_value || null,
-                metric_unit: achievement.metric_unit || null
-              });
+      // Process education
+      if (extractedData.education?.length) {
+        for (const edu of extractedData.education) {
+          if (edu.degree_name && edu.institution_name && edu.field_of_study) {
+            try {
+              const { error } = await supabase
+                .from('education')
+                .insert({
+                  user_id: userId,
+                  degree_name: edu.degree_name,
+                  institution_name: edu.institution_name,
+                  field_of_study: edu.field_of_study,
+                  completion_date: edu.completion_date || null
+                });
 
-            if (!error) {
-              addedItems.achievements++;
-              console.log('Successfully added new achievement:', achievement.description);
+              if (!error) {
+                addedItems.education++;
+                console.log('Successfully added new education:', edu.degree_name);
+              } else {
+                console.error('Error adding education:', error);
+                toast.error(`Failed to add education: ${edu.degree_name}`);
+              }
+            } catch (error) {
+              console.error('Error adding education:', error);
+              toast.error(`Failed to add education: ${edu.degree_name}`);
             }
-          } catch (error) {
-            console.error('Error adding achievement:', error);
           }
         }
       }
-    }
 
-    const totalAdded = Object.values(addedItems).reduce((sum, count) => sum + count, 0);
-    
-    return {
-      updated: totalAdded > 0,
-      addedItems
-    };
+      // Process projects
+      if (extractedData.projects?.length) {
+        for (const project of extractedData.projects) {
+          if (project.project_name) {
+            try {
+              const { error } = await supabase
+                .from('projects')
+                .insert({
+                  user_id: userId,
+                  project_name: project.project_name,
+                  description: project.description || null,
+                  start_date: project.start_date || null,
+                  end_date: project.end_date || null
+                });
+
+              if (!error) {
+                addedItems.projects++;
+                console.log('Successfully added new project:', project.project_name);
+              } else {
+                console.error('Error adding project:', error);
+                toast.error(`Failed to add project: ${project.project_name}`);
+              }
+            } catch (error) {
+              console.error('Error adding project:', error);
+              toast.error(`Failed to add project: ${project.project_name}`);
+            }
+          }
+        }
+      }
+
+      // Process achievements
+      if (extractedData.achievements?.length) {
+        for (const achievement of extractedData.achievements) {
+          if (achievement.description) {
+            try {
+              const { error } = await supabase
+                .from('achievements')
+                .insert({
+                  user_id: userId,
+                  description: achievement.description,
+                  date_achieved: achievement.date_achieved || null,
+                  metric_value: achievement.metric_value || null,
+                  metric_unit: achievement.metric_unit || null
+                });
+
+              if (!error) {
+                addedItems.achievements++;
+                console.log('Successfully added new achievement:', achievement.description);
+              } else {
+                console.error('Error adding achievement:', error);
+                toast.error(`Failed to add achievement`);
+              }
+            } catch (error) {
+              console.error('Error adding achievement:', error);
+              toast.error(`Failed to add achievement`);
+            }
+          }
+        }
+      }
+
+      const totalAdded = Object.values(addedItems).reduce((sum, count) => sum + count, 0);
+      
+      toast.dismiss(updateToast);
+
+      if (totalAdded > 0) {
+        // Show success message with details
+        const updateSummary = [];
+        if (addedItems.experiences > 0) updateSummary.push(`${addedItems.experiences} experience(s)`);
+        if (addedItems.skills > 0) updateSummary.push(`${addedItems.skills} skill(s)`);
+        if (addedItems.education > 0) updateSummary.push(`${addedItems.education} education(s)`);
+        if (addedItems.projects > 0) updateSummary.push(`${addedItems.projects} project(s)`);
+        if (addedItems.achievements > 0) updateSummary.push(`${addedItems.achievements} achievement(s)`);
+
+        toast.success(`Profile updated! Added ${updateSummary.join(', ')}.`, {
+          duration: 6000
+        });
+      }
+      
+      return {
+        updated: totalAdded > 0,
+        addedItems
+      };
+
+    } catch (error) {
+      toast.dismiss(updateToast);
+      console.error('Error processing interview message:', error);
+      toast.error('Failed to update profile. Please try again.');
+      
+      return {
+        updated: false,
+        addedItems: {
+          experiences: 0,
+          skills: 0,
+          education: 0,
+          projects: 0,
+          achievements: 0
+        }
+      };
+    }
   }
 }

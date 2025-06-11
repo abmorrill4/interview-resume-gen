@@ -1,10 +1,8 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AudioRecorder, encodeAudioForAPI, playAudioData } from '@/utils/RealtimeAudio';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileUpdateService } from '@/services/ProfileUpdateService';
-import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -18,6 +16,7 @@ interface UseRealtimeInterviewReturn {
   isSpeaking: boolean;
   isPaused: boolean;
   isMuted: boolean;
+  isProcessingProfile: boolean;
   messages: Message[];
   connect: () => Promise<void>;
   disconnect: () => void;
@@ -39,12 +38,12 @@ interface UseRealtimeInterviewReturn {
 
 export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isProcessingProfile, setIsProcessingProfile] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [profileUpdates, setProfileUpdates] = useState<{
@@ -70,6 +69,8 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
   const processUserMessage = useCallback(async (content: string) => {
     if (!user?.id || !content?.trim()) return;
 
+    setIsProcessingProfile(true);
+
     try {
       console.log('Processing user message for profile updates:', content);
       
@@ -82,27 +83,13 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
           totalUpdates: prev.totalUpdates + totalNewItems,
           lastUpdate: result.addedItems
         }));
-
-        // Show toast notification
-        const updateSummary = [];
-        if (result.addedItems.experiences > 0) updateSummary.push(`${result.addedItems.experiences} experience(s)`);
-        if (result.addedItems.skills > 0) updateSummary.push(`${result.addedItems.skills} skill(s)`);
-        if (result.addedItems.education > 0) updateSummary.push(`${result.addedItems.education} education(s)`);
-        if (result.addedItems.projects > 0) updateSummary.push(`${result.addedItems.projects} project(s)`);
-        if (result.addedItems.achievements > 0) updateSummary.push(`${result.addedItems.achievements} achievement(s)`);
-
-        if (updateSummary.length > 0) {
-          toast({
-            title: "Profile Updated!",
-            description: `Added ${updateSummary.join(', ')} to your profile hub.`,
-            duration: 4000,
-          });
-        }
       }
     } catch (error) {
       console.error('Error processing user message for profile updates:', error);
+    } finally {
+      setIsProcessingProfile(false);
     }
-  }, [user?.id, toast]);
+  }, [user?.id]);
 
   const handleAudioData = useCallback((audioData: Float32Array) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && !isPaused) {
@@ -359,6 +346,7 @@ export const useRealtimeInterview = (): UseRealtimeInterviewReturn => {
     isSpeaking,
     isPaused,
     isMuted,
+    isProcessingProfile,
     messages,
     connect,
     disconnect,
