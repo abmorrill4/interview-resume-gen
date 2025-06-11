@@ -117,7 +117,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <UserDashboard onStartInterview={handleStartInterview} />
+      <UserDashboard />
     </div>
   );
 };

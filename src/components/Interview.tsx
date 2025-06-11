@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, ArrowLeft, Bot, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
 
 interface UserData {
   personalInfo: {
@@ -33,7 +38,7 @@ interface UserData {
 }
 
 interface InterviewProps {
-  onComplete: (data: UserData) => void;
+  onComplete: (data: UserData, messages: Message[]) => void;
   initialData: UserData;
 }
 
@@ -51,6 +56,7 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const questions: Question[] = [
     {
@@ -137,6 +143,22 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
       return;
     }
 
+    // Add AI question to messages
+    const aiMessage: Message = {
+      role: 'assistant',
+      content: currentQuestion.text,
+      timestamp: new Date()
+    };
+
+    // Add user answer to messages
+    const userMessage: Message = {
+      role: 'user',
+      content: currentAnswer,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, aiMessage, userMessage]);
+
     setAnswers(prev => ({
       ...prev,
       [currentQuestion.id]: currentAnswer
@@ -181,7 +203,7 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
       // For now, we'll simulate processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      onComplete(processedData);
+      onComplete(processedData, messages);
       
       toast({
         title: "Interview complete!",
