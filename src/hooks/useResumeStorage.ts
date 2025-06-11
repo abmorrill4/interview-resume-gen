@@ -42,6 +42,31 @@ interface Resume {
   updated_at: string;
 }
 
+interface ExtractedJsonData {
+  personalInfo?: {
+    fullName: string;
+    email: string;
+    phone: string;
+    linkedin: string;
+  };
+  workExperience?: Array<{
+    jobTitle: string;
+    company: string;
+    startDate: string;
+    endDate: string;
+    responsibilities: string[];
+  }>;
+  education?: Array<{
+    degree: string;
+    field: string;
+    university: string;
+    graduationYear: string;
+  }>;
+  skills?: string[];
+  achievements?: string[];
+  interviewTranscript?: any;
+}
+
 export const useResumeStorage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -127,18 +152,23 @@ export const useResumeStorage = () => {
       if (error) throw error;
 
       // Transform the data to match the Resume interface
-      const transformedResumes: Resume[] = (data || []).map(transcript => ({
-        id: transcript.id,
-        user_id: transcript.user_id,
-        personal_info: transcript.ai_extracted_json?.personalInfo || {},
-        work_experience: transcript.ai_extracted_json?.workExperience || [],
-        education: transcript.ai_extracted_json?.education || [],
-        skills: transcript.ai_extracted_json?.skills || [],
-        achievements: transcript.ai_extracted_json?.achievements || [],
-        interview_transcript: transcript.ai_extracted_json?.interviewTranscript || {},
-        created_at: transcript.start_datetime || '',
-        updated_at: transcript.end_datetime || ''
-      }));
+      const transformedResumes: Resume[] = (data || []).map(transcript => {
+        // Safely extract data from ai_extracted_json with proper type checking
+        const extractedData = transcript.ai_extracted_json as ExtractedJsonData | null;
+        
+        return {
+          id: transcript.id,
+          user_id: transcript.user_id,
+          personal_info: extractedData?.personalInfo || {},
+          work_experience: extractedData?.workExperience || [],
+          education: extractedData?.education || [],
+          skills: extractedData?.skills || [],
+          achievements: extractedData?.achievements || [],
+          interview_transcript: extractedData?.interviewTranscript || {},
+          created_at: transcript.start_datetime || '',
+          updated_at: transcript.end_datetime || ''
+        };
+      });
 
       setResumes(transformedResumes);
     } catch (error) {
