@@ -2,30 +2,38 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, FileText, Briefcase, ArrowRight, Zap, Target, TrendingUp, Cpu, Database, BarChart3, Upload, CheckCircle2, Play } from "lucide-react";
+import { Brain, FileText, Briefcase, ArrowRight, Zap, Target, TrendingUp, Cpu, Database, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProfileData } from "@/hooks/useProfileData";
+import { useDocumentUpload } from "@/hooks/useDocumentUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import WelcomeOnboarding from "./WelcomeOnboarding";
 
 const UserDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profileStats, fetchProfileStats } = useProfileData();
+  const { documents, fetchDocuments } = useDocumentUpload();
 
   useEffect(() => {
     if (user) {
       fetchProfileStats();
+      fetchDocuments();
     }
-  }, [user, fetchProfileStats]);
+  }, [user, fetchProfileStats, fetchDocuments]);
 
-  // Check if user is new (has no profile data)
-  const isNewUser = profileStats && 
-    profileStats.experienceCount === 0 && 
-    profileStats.skillsCount === 0 && 
-    profileStats.educationCount === 0 && 
-    profileStats.projectsCount === 0 && 
-    profileStats.achievementsCount === 0;
+  // Check if user is new (has no profile data or documents)
+  const hasDocuments = documents.length > 0;
+  const hasProfileData = profileStats && (
+    profileStats.experienceCount > 0 || 
+    profileStats.skillsCount > 0 || 
+    profileStats.educationCount > 0 || 
+    profileStats.projectsCount > 0 || 
+    profileStats.achievementsCount > 0
+  );
+
+  const isNewUser = !hasDocuments && !hasProfileData;
 
   const quickActions = [
     {
@@ -61,30 +69,6 @@ const UserDashboard: React.FC = () => {
     { label: 'Interviews', value: '2.4K', icon: Cpu, trend: '+12%' },
     { label: 'Profiles', value: '89', icon: Database, trend: '+24%' },
     { label: 'Success Rate', value: '94.2%', icon: BarChart3, trend: '+8%' },
-  ];
-
-  const onboardingSteps = [
-    {
-      title: 'Upload your first document',
-      description: 'Upload your Resume, CV, or other professional documents',
-      icon: Upload,
-      action: () => navigate('/profile?tab=documents'),
-      completed: false
-    },
-    {
-      title: 'Let AI extract your profile information',
-      description: 'Process documents with AI to automatically populate your profile',
-      icon: Brain,
-      action: () => navigate('/profile?tab=documents'),
-      completed: false
-    },
-    {
-      title: 'Start your first AI-powered interview',
-      description: 'Have a conversation with our AI to enhance your profile',
-      icon: Play,
-      action: () => navigate('/interview'),
-      completed: false
-    }
   ];
 
   return (
@@ -165,45 +149,23 @@ const UserDashboard: React.FC = () => {
           </div>
 
           {/* Onboarding or Activity Section */}
-          <Card className="bg-card border border-border">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                {isNewUser ? (
-                  <>
-                    <Zap className="h-6 w-6 text-primary" />
-                    <div>
-                      <CardTitle className="text-xl">Welcome! Let's get you started</CardTitle>
-                      <CardDescription>Complete these steps to build your professional profile</CardDescription>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Target className="h-6 w-6 text-primary" />
-                    <div>
-                      <CardTitle className="text-xl">Recent Activity</CardTitle>
-                      <CardDescription>Your career development progress</CardDescription>
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              {isNewUser ? (
-                <div className="space-y-4">
-                  {onboardingSteps.map((step, index) => (
-                    <div key={index} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer" onClick={step.action}>
-                      <div className={`p-2 rounded-full ${step.completed ? 'bg-green-100 text-green-600' : 'bg-primary/10 text-primary'}`}>
-                        {step.completed ? <CheckCircle2 className="h-5 w-5" /> : <step.icon className="h-5 w-5" />}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-foreground">{step.title}</h3>
-                        <p className="text-sm text-muted-foreground">{step.description}</p>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  ))}
+          {isNewUser ? (
+            <WelcomeOnboarding 
+              hasDocuments={hasDocuments}
+              hasProfileData={!!hasProfileData}
+            />
+          ) : (
+            <Card className="bg-card border border-border">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Target className="h-6 w-6 text-primary" />
+                  <div>
+                    <CardTitle className="text-xl">Recent Activity</CardTitle>
+                    <CardDescription>Your career development progress</CardDescription>
+                  </div>
                 </div>
-              ) : (
+              </CardHeader>
+              <CardContent className="p-6">
                 <div className="text-center py-12">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
                     <Database className="h-8 w-8 text-primary" />
@@ -220,9 +182,9 @@ const UserDashboard: React.FC = () => {
                     <Brain className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
