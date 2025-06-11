@@ -33,23 +33,27 @@ serve(async (req) => {
   socket.onopen = () => {
     console.log("Client connected to realtime interview");
     
-    // Connect to OpenAI Realtime API
-    openaiWs = new WebSocket("wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17", {
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "OpenAI-Beta": "realtime=v1"
-      }
-    });
+    // Connect to OpenAI Realtime API with correct URL format
+    const openaiUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
+    console.log("Connecting to OpenAI:", openaiUrl);
+    
+    try {
+      openaiWs = new WebSocket(openaiUrl, {
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "OpenAI-Beta": "realtime=v1"
+        }
+      });
 
-    openaiWs.onopen = () => {
-      console.log("Connected to OpenAI Realtime API");
-      
-      // Send session configuration after connection
-      const sessionConfig = {
-        type: 'session.update',
-        session: {
-          modalities: ["text", "audio"],
-          instructions: `You are an expert career counselor conducting a friendly, conversational resume interview. Your goal is to help the user create an outstanding resume by gathering information about their:
+      openaiWs.onopen = () => {
+        console.log("Connected to OpenAI Realtime API");
+        
+        // Send session configuration after connection
+        const sessionConfig = {
+          type: 'session.update',
+          session: {
+            modalities: ["text", "audio"],
+            instructions: `You are an expert career counselor conducting a friendly, conversational resume interview. Your goal is to help the user create an outstanding resume by gathering information about their:
 
 1. Personal information (name, email, phone, LinkedIn)
 2. Work experience (job titles, companies, dates, responsibilities, achievements)
@@ -67,45 +71,50 @@ Guidelines:
 - When you have enough information, let them know the interview is complete
 
 Start by introducing yourself and asking them to tell you about themselves and their career goals.`,
-          voice: "alloy",
-          input_audio_format: "pcm16",
-          output_audio_format: "pcm16",
-          input_audio_transcription: {
-            model: "whisper-1"
-          },
-          turn_detection: {
-            type: "server_vad",
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 1000
-          },
-          tools: [],
-          tool_choice: "auto",
-          temperature: 0.8,
-          max_response_output_tokens: "inf"
-        }
+            voice: "alloy",
+            input_audio_format: "pcm16",
+            output_audio_format: "pcm16",
+            input_audio_transcription: {
+              model: "whisper-1"
+            },
+            turn_detection: {
+              type: "server_vad",
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 1000
+            },
+            tools: [],
+            tool_choice: "auto",
+            temperature: 0.8,
+            max_response_output_tokens: "inf"
+          }
+        };
+        
+        openaiWs?.send(JSON.stringify(sessionConfig));
       };
-      
-      openaiWs?.send(JSON.stringify(sessionConfig));
-    };
 
-    openaiWs.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("OpenAI message:", data.type);
-      
-      // Forward all OpenAI messages to client
-      socket.send(JSON.stringify(data));
-    };
+      openaiWs.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log("OpenAI message:", data.type);
+        
+        // Forward all OpenAI messages to client
+        socket.send(JSON.stringify(data));
+      };
 
-    openaiWs.onerror = (error) => {
-      console.error("OpenAI WebSocket error:", error);
-      socket.send(JSON.stringify({ type: 'error', error: 'Connection to AI failed' }));
-    };
+      openaiWs.onerror = (error) => {
+        console.error("OpenAI WebSocket error:", error);
+        socket.send(JSON.stringify({ type: 'error', error: 'Connection to AI failed' }));
+      };
 
-    openaiWs.onclose = () => {
-      console.log("OpenAI WebSocket closed");
+      openaiWs.onclose = (event) => {
+        console.log("OpenAI WebSocket closed:", event.code, event.reason);
+        socket.close();
+      };
+    } catch (error) {
+      console.error("Failed to create OpenAI WebSocket:", error);
+      socket.send(JSON.stringify({ type: 'error', error: 'Failed to connect to AI service' }));
       socket.close();
-    };
+    }
   };
 
   socket.onmessage = (event) => {
