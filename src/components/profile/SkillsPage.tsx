@@ -8,10 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Code, Trash2, Search } from 'lucide-react';
+import { Plus, Code, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useProfileData } from '@/hooks/useProfileData';
 import { supabase } from '@/integrations/supabase/client';
+import { Autocomplete } from '@/components/ui/autocomplete';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface SkillFormData {
   skillId: string;
@@ -26,10 +28,12 @@ interface Skill {
 }
 
 const SkillsPage: React.FC = () => {
-  const { userSkills, fetchUserSkills, addUserSkill, loading } = useProfileData();
+  const { userSkills, fetchUserSkills, addUserSkill, deleteUserSkill, loading } = useProfileData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
   const [skillSearch, setSkillSearch] = useState('');
+  const [filteredSkills, setFilteredSkills] = useState<Skill[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const form = useForm<SkillFormData>({
     defaultValues: {
@@ -58,9 +62,40 @@ const SkillsPage: React.FC = () => {
     }
   };
 
-  const filteredSkills = availableSkills.filter(skill =>
-    skill.name.toLowerCase().includes(skillSearch.toLowerCase())
-  );
+  // Real-time skill search with debouncing
+  useEffect(() => {
+    const searchSkills = async () => {
+      if (!skillSearch.trim()) {
+        setFilteredSkills([]);
+        return;
+      }
+
+      setSearchLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('skills')
+          .select('*')
+          .ilike('name', `%${skillSearch}%`)
+          .order('name')
+          .limit(10);
+
+        if (error) throw error;
+        
+        // Filter out skills already added by the user
+        const userSkillIds = userSkills.map(us => us.skill_id);
+        const filtered = (data || []).filter(skill => !userSkillIds.includes(skill.id));
+        setFilteredSkills(filtered);
+      } catch (error) {
+        console.error('Error searching skills:', error);
+        setFilteredSkills([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    const timeoutId = setTimeout(searchSkills, 300);
+    return () => clearTimeout(timeoutId);
+  }, [skillSearch, userSkills]);
 
   const onSubmit = async (data: SkillFormData) => {
     await addUserSkill({
@@ -72,6 +107,15 @@ const SkillsPage: React.FC = () => {
     setIsDialogOpen(false);
     form.reset();
     setSkillSearch('');
+  };
+
+  const handleSkillSelect = (option: any) => {
+    form.setValue('skillId', option.value);
+    setSkillSearch(option.label);
+  };
+
+  const handleDeleteSkill = async (skillId: string) => {
+    await deleteUserSkill(skillId);
   };
 
   const getProficiencyColor = (level?: string) => {
@@ -92,6 +136,12 @@ const SkillsPage: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const autocompleteOptions = filteredSkills.map(skill => ({
+    value: skill.id,
+    label: skill.name,
+    data: skill
+  }));
 
   return (
     <div className="space-y-6">
@@ -130,34 +180,15 @@ const SkillsPage: React.FC = () => {
                     <FormItem>
                       <FormLabel>Skill</FormLabel>
                       <FormControl>
-                        <div className="space-y-2">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              placeholder="Search skills..."
-                              value={skillSearch}
-                              onChange={(e) => setSkillSearch(e.target.value)}
-                              className="pl-10"
-                            />
-                          </div>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a skill" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {filteredSkills.map((skill) => (
-                                <SelectItem key={skill.id} value={skill.id}>
-                                  <div className="flex items-center gap-2">
-                                    <span>{skill.name}</span>
-                                    <Badge variant="outline" className={getSkillTypeColor(skill.type)}>
-                                      {skill.type}
-                                    </Badge>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <Autocomplete
+                          value={skillSearch}
+                          onChange={setSkillSearch}
+                          onSelect={handleSkillSelect}
+                          options={autocompleteOptions}
+                          placeholder="Search and select a skill..."
+                          loading={searchLoading}
+                          emptyMessage="No skills found. Try a different search term."
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -213,7 +244,7 @@ const SkillsPage: React.FC = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={loading}>
+                  <Button type="submit" disabled={loading || !form.watch('skillId')}>
                     {loading ? 'Adding...' : 'Add Skill'}
                   </Button>
                 </div>
@@ -276,13 +307,31 @@ const SkillsPage: React.FC = () => {
                       }
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove Skill</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to remove "{userSkill.skill.name}" from your skills? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteSkill(userSkill.skill_id)}>
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}

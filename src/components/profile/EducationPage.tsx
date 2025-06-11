@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, GraduationCap, Calendar, Edit, Trash2 } from 'lucide-react';
+import { Plus, GraduationCap, Calendar, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useProfileData } from '@/hooks/useProfileData';
 import { format } from 'date-fns';
+import { InlineEdit } from '@/components/ui/inline-edit';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface EducationFormData {
   degree_name: string;
@@ -19,7 +20,7 @@ interface EducationFormData {
 }
 
 const EducationPage: React.FC = () => {
-  const { education, fetchEducation, addEducation, loading } = useProfileData();
+  const { education, fetchEducation, addEducation, updateEducation, deleteEducation, loading } = useProfileData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const form = useForm<EducationFormData>({
@@ -44,6 +45,15 @@ const EducationPage: React.FC = () => {
     await addEducation(educationData);
     setIsDialogOpen(false);
     form.reset();
+  };
+
+  const handleInlineUpdate = async (educationId: string, field: string, value: string) => {
+    const updates = { [field]: value || undefined };
+    await updateEducation(educationId, updates);
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteEducation(id);
   };
 
   return (
@@ -165,36 +175,85 @@ const EducationPage: React.FC = () => {
             <Card key={edu.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <CardTitle className="text-xl">{edu.degree_name}</CardTitle>
+                  <div className="space-y-3 flex-1">
+                    <InlineEdit
+                      value={edu.degree_name}
+                      onSave={(value) => handleInlineUpdate(edu.id, 'degree_name', value)}
+                      className="text-xl font-semibold"
+                      placeholder="Degree Name"
+                    />
+                    
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <GraduationCap className="h-4 w-4" />
-                      <span className="font-medium">{edu.institution_name}</span>
+                      <InlineEdit
+                        value={edu.institution_name}
+                        onSave={(value) => handleInlineUpdate(edu.id, 'institution_name', value)}
+                        className="font-medium"
+                        placeholder="Institution Name"
+                      />
                     </div>
-                    <Badge variant="outline" className="w-fit">
-                      {edu.field_of_study}
-                    </Badge>
-                    {edu.completion_date && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>Completed {format(new Date(edu.completion_date), 'MMM yyyy')}</span>
-                      </div>
-                    )}
+                    
+                    <div className="flex items-center gap-4">
+                      <Badge variant="outline" className="w-fit">
+                        <InlineEdit
+                          value={edu.field_of_study}
+                          onSave={(value) => handleInlineUpdate(edu.id, 'field_of_study', value)}
+                          placeholder="Field of Study"
+                        />
+                      </Badge>
+                      
+                      {edu.completion_date ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>Completed:</span>
+                          <InlineEdit
+                            value={edu.completion_date}
+                            onSave={(value) => handleInlineUpdate(edu.id, 'completion_date', value)}
+                            type="date"
+                            displayValue={format(new Date(edu.completion_date), 'MMM yyyy')}
+                            placeholder="Completion date"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <InlineEdit
+                            value=""
+                            onSave={(value) => handleInlineUpdate(edu.id, 'completion_date', value)}
+                            type="date"
+                            placeholder="Add completion date"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  
+                  <div className="flex gap-2 ml-4">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Education</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this education entry? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(edu.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardHeader>

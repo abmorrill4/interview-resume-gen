@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -366,6 +365,112 @@ export const useProfileData = () => {
     }
   }, [user, toast, fetchProfileStats]);
 
+  const updateEducation = useCallback(async (id: string, updates: Partial<Education>) => {
+    if (!user) return false;
+    setLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('education')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setEducation(prev => prev.map(edu => 
+        edu.id === id ? { ...edu, ...updates } : edu
+      ));
+
+      toast({
+        title: "Success",
+        description: "Education updated successfully"
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error updating education:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update education",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, toast]);
+
+  const deleteEducation = useCallback(async (id: string) => {
+    if (!user) return false;
+    setLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('education')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setEducation(prev => prev.filter(edu => edu.id !== id));
+      await fetchProfileStats();
+
+      toast({
+        title: "Success",
+        description: "Education deleted successfully"
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting education:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete education",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, toast, fetchProfileStats]);
+
+  const deleteUserSkill = useCallback(async (skillId: string) => {
+    if (!user) return false;
+    setLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('user_skills')
+        .delete()
+        .eq('skill_id', skillId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setUserSkills(prev => prev.filter(us => us.skill_id !== skillId));
+      await fetchProfileStats();
+
+      toast({
+        title: "Success",
+        description: "Skill removed successfully"
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error removing skill:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove skill",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, toast, fetchProfileStats]);
+
   // Projects methods
   const fetchProjects = useCallback(async () => {
     if (!user) return;
@@ -511,6 +616,9 @@ export const useProfileData = () => {
     addUserSkill,
     fetchEducation,
     addEducation,
+    updateEducation,
+    deleteEducation,
+    deleteUserSkill,
     fetchProjects,
     addProject,
     fetchAchievements,

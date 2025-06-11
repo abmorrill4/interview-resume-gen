@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,8 @@ import { Plus, Edit, Trash2, Briefcase, Calendar } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useProfileData } from '@/hooks/useProfileData';
 import { format } from 'date-fns';
+import { InlineEdit } from '@/components/ui/inline-edit';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface ExperienceFormData {
   job_title: string;
@@ -23,7 +24,6 @@ interface ExperienceFormData {
 const ExperiencePage: React.FC = () => {
   const { experiences, fetchExperiences, addExperience, updateExperience, deleteExperience, loading } = useProfileData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingExperience, setEditingExperience] = useState<any>(null);
 
   const form = useForm<ExperienceFormData>({
     defaultValues: {
@@ -45,27 +45,14 @@ const ExperiencePage: React.FC = () => {
       end_date: data.end_date || undefined
     };
 
-    if (editingExperience) {
-      await updateExperience(editingExperience.id, experienceData);
-    } else {
-      await addExperience(experienceData);
-    }
-
+    await addExperience(experienceData);
     setIsDialogOpen(false);
-    setEditingExperience(null);
     form.reset();
   };
 
-  const handleEdit = (experience: any) => {
-    setEditingExperience(experience);
-    form.reset({
-      job_title: experience.job_title,
-      company_name: experience.company_name,
-      start_date: experience.start_date,
-      end_date: experience.end_date || '',
-      description: experience.description || ''
-    });
-    setIsDialogOpen(true);
+  const handleInlineUpdate = async (experienceId: string, field: string, value: string) => {
+    const updates = { [field]: value || undefined };
+    await updateExperience(experienceId, updates);
   };
 
   const handleDelete = async (id: string) => {
@@ -93,10 +80,7 @@ const ExperiencePage: React.FC = () => {
           <DialogTrigger asChild>
             <Button 
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-              onClick={() => {
-                setEditingExperience(null);
-                form.reset();
-              }}
+              onClick={() => form.reset()}
             >
               <Plus className="h-4 w-4 mr-2" />
               Add New Experience
@@ -104,9 +88,7 @@ const ExperiencePage: React.FC = () => {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>
-                {editingExperience ? 'Edit Experience' : 'Add New Experience'}
-              </DialogTitle>
+              <DialogTitle>Add New Experience</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -192,7 +174,7 @@ const ExperiencePage: React.FC = () => {
                     Cancel
                   </Button>
                   <Button type="submit" disabled={loading}>
-                    {loading ? 'Saving...' : (editingExperience ? 'Update' : 'Add')} Experience
+                    {loading ? 'Adding...' : 'Add Experience'}
                   </Button>
                 </div>
               </form>
@@ -221,46 +203,95 @@ const ExperiencePage: React.FC = () => {
             <Card key={experience.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <CardTitle className="text-xl">{experience.job_title}</CardTitle>
+                  <div className="space-y-3 flex-1">
+                    <InlineEdit
+                      value={experience.job_title}
+                      onSave={(value) => handleInlineUpdate(experience.id, 'job_title', value)}
+                      className="text-xl font-semibold"
+                      placeholder="Job Title"
+                    />
+                    
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Briefcase className="h-4 w-4" />
-                      <span className="font-medium">{experience.company_name}</span>
+                      <InlineEdit
+                        value={experience.company_name}
+                        onSave={(value) => handleInlineUpdate(experience.id, 'company_name', value)}
+                        className="font-medium"
+                        placeholder="Company Name"
+                      />
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDateRange(experience.start_date, experience.end_date)}</span>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>Start:</span>
+                        <InlineEdit
+                          value={experience.start_date}
+                          onSave={(value) => handleInlineUpdate(experience.id, 'start_date', value)}
+                          type="date"
+                          displayValue={experience.start_date ? format(new Date(experience.start_date), 'MMM yyyy') : undefined}
+                          placeholder="Start date"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>End:</span>
+                        <InlineEdit
+                          value={experience.end_date || ''}
+                          onSave={(value) => handleInlineUpdate(experience.id, 'end_date', value)}
+                          type="date"
+                          displayValue={experience.end_date ? format(new Date(experience.end_date), 'MMM yyyy') : 'Present'}
+                          placeholder="End date (optional)"
+                        />
+                      </div>
+                      
                       {!experience.end_date && (
                         <Badge variant="outline" className="ml-2">Current</Badge>
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(experience)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(experience.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  
+                  <div className="flex gap-2 ml-4">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Experience</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this work experience? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(experience.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardHeader>
-              {experience.description && (
-                <CardContent className="pt-0">
-                  <p className="text-muted-foreground leading-relaxed">
-                    {experience.description}
-                  </p>
-                </CardContent>
-              )}
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Description:</p>
+                  <InlineEdit
+                    value={experience.description || ''}
+                    onSave={(value) => handleInlineUpdate(experience.id, 'description', value)}
+                    multiline
+                    placeholder="Add description of your responsibilities and achievements..."
+                    className="text-muted-foreground leading-relaxed min-h-[60px]"
+                  />
+                </div>
+              </CardContent>
             </Card>
           ))}
         </div>
