@@ -7,6 +7,8 @@ import { Download, Copy, ArrowLeft, FileText, RefreshCw, Eye, EyeOff } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { useEnhancedInterview } from "@/hooks/useEnhancedInterview";
 
+export type ResumeMode = 'basic' | 'realtime';
+
 interface UserData {
   personalInfo: {
     fullName: string;
@@ -31,17 +33,24 @@ interface UserData {
   achievements: string[];
 }
 
-interface RealtimeResumeProps {
+interface ResumeGeneratorProps {
   userData: UserData;
   onStartOver: () => void;
+  mode?: ResumeMode;
+  onModeChange?: (mode: ResumeMode) => void;
 }
 
-const RealtimeResume: React.FC<RealtimeResumeProps> = ({ userData, onStartOver }) => {
+const ResumeGenerator: React.FC<ResumeGeneratorProps> = ({ 
+  userData, 
+  onStartOver, 
+  mode = 'basic',
+  onModeChange 
+}) => {
   const { toast } = useToast();
   const { enhanceContent, isEnhancing } = useEnhancedInterview();
   const [markdownResume, setMarkdownResume] = useState('');
   const [editableUserData, setEditableUserData] = useState<UserData>(userData);
-  const [isAutoUpdateEnabled, setIsAutoUpdateEnabled] = useState(true);
+  const [isAutoUpdateEnabled, setIsAutoUpdateEnabled] = useState(mode === 'realtime');
   const [showPreview, setShowPreview] = useState(true);
 
   const generateMarkdownResume = (data: UserData): string => {
@@ -111,6 +120,15 @@ const RealtimeResume: React.FC<RealtimeResumeProps> = ({ userData, onStartOver }
       setEditableUserData(userData);
     }
   }, [userData, isAutoUpdateEnabled]);
+
+  useEffect(() => {
+    setIsAutoUpdateEnabled(mode === 'realtime');
+  }, [mode]);
+
+  const handleModeSwitch = (newMode: ResumeMode) => {
+    setIsAutoUpdateEnabled(newMode === 'realtime');
+    onModeChange?.(newMode);
+  };
 
   const handleEnhanceSection = async (content: string, type: string, field: keyof UserData) => {
     if (!content.trim()) return;
@@ -196,22 +214,46 @@ const RealtimeResume: React.FC<RealtimeResumeProps> = ({ userData, onStartOver }
               </div>
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-              Your Enhanced Resume is Ready!
+              {mode === 'realtime' ? 'Your Enhanced Resume is Ready!' : 'Your Resume is Ready!'}
             </h1>
             <p className="text-muted-foreground">
-              Your AI-enhanced resume with real-time updates. Edit, enhance, and perfect it below.
+              {mode === 'realtime' 
+                ? 'Your AI-enhanced resume with real-time updates. Edit, enhance, and perfect it below.'
+                : 'Your AI-generated resume in markdown format. You can copy, download, or edit it below.'
+              }
             </p>
           </div>
 
           <div className="flex justify-center gap-4 mb-6">
-            <Button
-              onClick={() => setIsAutoUpdateEnabled(!isAutoUpdateEnabled)}
-              variant="outline"
-              className={`flex items-center gap-2 ${isAutoUpdateEnabled ? 'bg-green-100' : ''}`}
-            >
-              <RefreshCw className="h-4 w-4" />
-              Auto-Update: {isAutoUpdateEnabled ? 'ON' : 'OFF'}
-            </Button>
+            {/* Mode Switcher */}
+            <div className="flex gap-2">
+              <Button
+                onClick={() => handleModeSwitch('basic')}
+                variant={mode === 'basic' ? 'default' : 'outline'}
+                size="sm"
+              >
+                Basic
+              </Button>
+              <Button
+                onClick={() => handleModeSwitch('realtime')}
+                variant={mode === 'realtime' ? 'default' : 'outline'}
+                size="sm"
+              >
+                Enhanced
+              </Button>
+            </div>
+
+            {mode === 'realtime' && (
+              <Button
+                onClick={() => setIsAutoUpdateEnabled(!isAutoUpdateEnabled)}
+                variant="outline"
+                className={`flex items-center gap-2 ${isAutoUpdateEnabled ? 'bg-green-100' : ''}`}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Auto-Update: {isAutoUpdateEnabled ? 'ON' : 'OFF'}
+              </Button>
+            )}
+            
             <Button
               onClick={() => setShowPreview(!showPreview)}
               variant="outline"
@@ -222,13 +264,13 @@ const RealtimeResume: React.FC<RealtimeResumeProps> = ({ userData, onStartOver }
             </Button>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className={`grid gap-8 ${showPreview ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
             {/* Preview Column */}
             {showPreview && (
               <Card className="border-0 shadow-xl">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Live Resume Preview</span>
+                    <span>{mode === 'realtime' ? 'Live Resume Preview' : 'Resume Preview'}</span>
                     <div className="flex gap-2">
                       <Button
                         onClick={handleCopyToClipboard}
@@ -263,24 +305,26 @@ const RealtimeResume: React.FC<RealtimeResumeProps> = ({ userData, onStartOver }
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Markdown Source</span>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => handleEnhanceSection(editableUserData.skills.join(', '), 'skills', 'skills')}
-                      disabled={isEnhancing}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Enhance Skills
-                    </Button>
-                    <Button
-                      onClick={() => handleEnhanceSection(editableUserData.achievements.join('\n'), 'achievements', 'achievements')}
-                      disabled={isEnhancing}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Enhance Achievements
-                    </Button>
-                  </div>
+                  {mode === 'realtime' && (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleEnhanceSection(editableUserData.skills.join(', '), 'skills', 'skills')}
+                        disabled={isEnhancing}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Enhance Skills
+                      </Button>
+                      <Button
+                        onClick={() => handleEnhanceSection(editableUserData.achievements.join('\n'), 'achievements', 'achievements')}
+                        disabled={isEnhancing}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Enhance Achievements
+                      </Button>
+                    </div>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -314,4 +358,4 @@ const RealtimeResume: React.FC<RealtimeResumeProps> = ({ userData, onStartOver }
   );
 };
 
-export default RealtimeResume;
+export default ResumeGenerator;

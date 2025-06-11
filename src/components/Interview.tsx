@@ -1,11 +1,24 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ArrowRight, ArrowLeft, Bot, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { ArrowRight, ArrowLeft, Bot, User, Sparkles, Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useEnhancedInterview } from "@/hooks/useEnhancedInterview";
+import { useVoiceChat } from "@/hooks/useVoiceChat";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { useRealtimeInterview } from "@/hooks/useRealtimeInterview";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+import InterviewControls from "./InterviewControls";
+
+export type InterviewMode = 'text' | 'enhanced' | 'realtime';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -40,6 +53,8 @@ interface UserData {
 interface InterviewProps {
   onComplete: (data: UserData, messages: Message[]) => void;
   initialData: UserData;
+  mode?: InterviewMode;
+  onModeChange?: (mode: InterviewMode) => void;
 }
 
 interface Question {
@@ -50,13 +65,52 @@ interface Question {
   required: boolean;
 }
 
-const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
+const Interview: React.FC<InterviewProps> = ({ 
+  onComplete, 
+  initialData, 
+  mode = 'text',
+  onModeChange 
+}) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Enhanced mode hooks
+  const { enhanceContent, isEnhancing } = useEnhancedInterview();
+  const { messages: chatMessages, sendMessage, isLoading: isChatLoading, clearMessages } = useVoiceChat();
+  const { speak, isPlaying, stop } = useTextToSpeech();
+  
+  // Realtime mode hooks
+  const {
+    isConnected,
+    isListening,
+    isSpeaking,
+    isPaused,
+    isMuted,
+    messages: realtimeMessages,
+    connect,
+    disconnect,
+    togglePause,
+    toggleMute,
+    repeatLastQuestion,
+    error: realtimeError,
+    profileUpdates
+  } = useRealtimeInterview();
+
+  // Common state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [interviewStarted, setInterviewStarted] = useState(false);
+  
+  // Enhanced mode specific state
+  const [isVoiceModeEnabled, setIsVoiceModeEnabled] = useState(false);
+  const [showVoiceChat, setShowVoiceChat] = useState(false);
+  const [interviewTranscript, setInterviewTranscript] = useState<Array<{
+    question: string;
+    answer: string;
+    timestamp: string;
+  }>>([]);
 
   const questions: Question[] = [
     {
@@ -127,11 +181,97 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
+  // Pre-fill personal info from user profile if available
   useEffect(() => {
-    // Initialize current answer with existing data if available
-    const existingAnswer = answers[currentQuestion.id] || '';
+    if (user && currentQuestionIndex === 0 && !answers.fullName) {
+      const userEmail = user.email || '';
+      setAnswers(prev => ({
+        ...prev,
+        email: userEmail
+      }));
+    }
+  }, [user, currentQuestionIndex, answers.fullName]);
+
+  useEffect(() => {
+    const existingAnswer = answers[currentQuestion?.id] || '';
     setCurrentAnswer(existingAnswer);
-  }, [currentQuestionIndex, answers, currentQuestion.id]);
+  }, [currentQuestionIndex, answers, currentQuestion?.id]);
+
+  useEffect(() => {
+    if (mode === 'enhanced' && isVoiceModeEnabled && currentQuestion) {
+      speak(currentQuestion.text);
+    }
+  }, [currentQuestionIndex, mode, isVoiceModeEnabled, speak, currentQuestion]);
+
+  useEffect(() => {
+    if (realtimeError) {
+      toast({
+        title: "Connection Error",
+        description: realtimeError,
+        variant: "destructive"
+      });
+    }
+  }, [realtimeError, toast]);
+
+  const handleModeSwitch = (newMode: InterviewMode) => {
+    if (mode === 'realtime' && isConnected) {
+      disconnect();
+      setInterviewStarted(false);
+    }
+    if (mode === 'enhanced' && isVoiceModeEnabled) {
+      stop();
+      setIsVoiceModeEnabled(false);
+    }
+    onModeChange?.(newMode);
+  };
+
+  const handleStartRealtimeInterview = async () => {
+    try {
+      await connect();
+      setInterviewStarted(true);
+      toast({
+        title: "Interview Started",
+        description: "The AI interviewer is ready to speak with you!",
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to Start",
+        description: "Could not start the interview. Please check your microphone permissions.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEndRealtimeInterview = () => {
+    disconnect();
+    setInterviewStarted(false);
+    
+    const processedData = processConversationToUserData(realtimeMessages);
+    onComplete(processedData, realtimeMessages);
+    
+    toast({
+      title: "Interview Complete",
+      description: "Processing your responses to create summary...",
+    });
+  };
+
+  const handleEnhanceAnswer = async () => {
+    if (!currentAnswer.trim()) return;
+
+    const enhanced = await enhanceContent(
+      currentAnswer,
+      currentQuestion.category,
+      `This is for a ${currentQuestion.id} section of a resume.`
+    );
+    
+    if (enhanced !== currentAnswer) {
+      setCurrentAnswer(enhanced);
+      toast({
+        title: "Answer enhanced!",
+        description: "Your response has been improved by AI.",
+      });
+    }
+  };
 
   const handleNext = async () => {
     if (currentQuestion.required && !currentAnswer.trim()) {
@@ -143,21 +283,14 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
       return;
     }
 
-    // Add AI question to messages
-    const aiMessage: Message = {
-      role: 'assistant',
-      content: currentQuestion.text,
-      timestamp: new Date()
-    };
-
-    // Add user answer to messages
-    const userMessage: Message = {
-      role: 'user',
-      content: currentAnswer,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, aiMessage, userMessage]);
+    // Add to transcript for enhanced mode
+    if (mode === 'enhanced') {
+      setInterviewTranscript(prev => [...prev, {
+        question: currentQuestion.text,
+        answer: currentAnswer,
+        timestamp: new Date().toISOString()
+      }]);
+    }
 
     setAnswers(prev => ({
       ...prev,
@@ -185,11 +318,10 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
     setIsLoading(true);
     
     try {
-      // Process the answers into structured data
       const processedData: UserData = {
         personalInfo: {
           fullName: answers.fullName || '',
-          email: answers.email || '',
+          email: answers.email || user?.email || '',
           phone: answers.phone || '',
           linkedin: answers.linkedin || ''
         },
@@ -199,11 +331,11 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
         achievements: parseAchievements(answers.achievements)
       };
 
-      // Here you would normally call OpenAI API to enhance the content
-      // For now, we'll simulate processing
       await new Promise(resolve => setTimeout(resolve, 2000));
-
-      onComplete(processedData, messages);
+      onComplete(processedData, mode === 'enhanced' ? 
+        interviewTranscript.map(t => ({ role: 'assistant' as const, content: t.question, timestamp: new Date(t.timestamp) })) :
+        []
+      );
       
       toast({
         title: "Interview complete!",
@@ -220,18 +352,81 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
     }
   };
 
+  const processConversationToUserData = (messages: any[]): UserData => {
+    const allUserMessages = messages
+      .filter(m => m.role === 'user')
+      .map(m => m.content)
+      .join(' ');
+
+    return {
+      personalInfo: {
+        fullName: extractNameFromText(allUserMessages) || initialData.personalInfo.fullName,
+        email: initialData.personalInfo.email,
+        phone: extractPhoneFromText(allUserMessages) || initialData.personalInfo.phone,
+        linkedin: extractLinkedInFromText(allUserMessages) || initialData.personalInfo.linkedin
+      },
+      workExperience: [{
+        jobTitle: "Position Title",
+        company: "Company Name",
+        startDate: "Start Date",
+        endDate: "End Date",
+        responsibilities: [allUserMessages]
+      }],
+      education: [{
+        degree: "Degree",
+        field: "Field of Study",
+        university: "University Name",
+        graduationYear: "Graduation Year"
+      }],
+      skills: extractSkillsFromText(allUserMessages),
+      achievements: extractAchievementsFromText(allUserMessages)
+    };
+  };
+
+  // Utility functions for text extraction
+  const extractNameFromText = (text: string): string => {
+    const nameMatch = text.match(/(?:I'm|my name is|I am)\s+([A-Za-z]+\s+[A-Za-z]+)/i);
+    return nameMatch ? nameMatch[1] : '';
+  };
+
+  const extractPhoneFromText = (text: string): string => {
+    const phoneMatch = text.match(/\d{3}[-.]?\d{3}[-.]?\d{4}/);
+    return phoneMatch ? phoneMatch[0] : '';
+  };
+
+  const extractLinkedInFromText = (text: string): string => {
+    const linkedinMatch = text.match(/linkedin\.com\/in\/[\w-]+/i);
+    return linkedinMatch ? `https://${linkedinMatch[0]}` : '';
+  };
+
+  const extractSkillsFromText = (text: string): string[] => {
+    const skillKeywords = ['JavaScript', 'Python', 'React', 'Node.js', 'SQL', 'leadership', 'communication'];
+    return skillKeywords.filter(skill => 
+      text.toLowerCase().includes(skill.toLowerCase())
+    );
+  };
+
+  const extractAchievementsFromText = (text: string): string[] => {
+    const sentences = text.split(/[.!?]+/);
+    return sentences.filter(sentence => 
+      sentence.toLowerCase().includes('achieved') ||
+      sentence.toLowerCase().includes('accomplished') ||
+      sentence.toLowerCase().includes('increased') ||
+      sentence.toLowerCase().includes('improved')
+    ).map(s => s.trim()).filter(Boolean);
+  };
+
   const parseWorkExperience = (overview: string, previous: string) => {
-    // Simple parsing - in a real app, you'd use OpenAI to structure this better
     const experiences = [];
     const allText = `${overview} ${previous || ''}`.trim();
     
     if (allText) {
       experiences.push({
-        jobTitle: "Position Title", // Would be extracted by AI
+        jobTitle: "Position Title",
         company: "Company Name",
         startDate: "Start Date",
         endDate: "End Date",
-        responsibilities: [allText] // Would be broken into bullet points by AI
+        responsibilities: [allText]
       });
     }
     
@@ -251,26 +446,317 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
 
   const parseSkills = (skillsText: string) => {
     if (!skillsText) return [];
-    
     return skillsText.split(',').map(skill => skill.trim()).filter(Boolean);
   };
 
   const parseAchievements = (achievementsText: string) => {
     if (!achievementsText) return [];
-    
     return achievementsText.split('\n').map(achievement => achievement.trim()).filter(Boolean);
   };
 
+  // Realtime mode UI
+  if (mode === 'realtime') {
+    if (!interviewStarted) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+          <div className="container mx-auto px-4 py-12">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="mb-8">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-4 w-fit mx-auto mb-6">
+                  <Phone className="h-12 w-12 text-white" />
+                </div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+                  AI Voice Interview
+                </h1>
+                <p className="text-xl text-muted-foreground mb-8">
+                  Have a natural conversation with our AI interviewer to create your resume
+                </p>
+              </div>
+
+              {/* Mode Switcher */}
+              <div className="flex justify-center gap-2 mb-8">
+                <Button
+                  onClick={() => handleModeSwitch('text')}
+                  variant={mode === 'text' ? 'default' : 'outline'}
+                  size="sm"
+                >
+                  Text
+                </Button>
+                <Button
+                  onClick={() => handleModeSwitch('enhanced')}
+                  variant={mode === 'enhanced' ? 'default' : 'outline'}
+                  size="sm"
+                >
+                  Enhanced
+                </Button>
+                <Button
+                  onClick={() => handleModeSwitch('realtime')}
+                  variant={mode === 'realtime' ? 'default' : 'outline'}
+                  size="sm"
+                >
+                  Voice
+                </Button>
+              </div>
+
+              <Card className="border-0 shadow-xl mb-8">
+                <CardContent className="p-8">
+                  <div className="space-y-4 text-left">
+                    <h3 className="font-semibold text-lg mb-4">What to expect:</h3>
+                    <div className="flex items-start gap-3">
+                      <Bot className="h-5 w-5 text-blue-600 mt-1" />
+                      <div>
+                        <p className="font-medium">Natural conversation</p>
+                        <p className="text-sm text-muted-foreground">Speak naturally about your experience and career</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Mic className="h-5 w-5 text-blue-600 mt-1" />
+                      <div>
+                        <p className="font-medium">Voice-powered</p>
+                        <p className="text-sm text-muted-foreground">No typing required - just speak your answers</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="h-5 w-5 text-blue-600 mt-1" />
+                      <div>
+                        <p className="font-medium">Real-time profile updates</p>
+                        <p className="text-sm text-muted-foreground">Your profile hub updates automatically as you speak</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button
+                onClick={handleStartRealtimeInterview}
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Phone className="h-5 w-5 mr-2" />
+                Start Voice Interview
+              </Button>
+              
+              <p className="text-sm text-muted-foreground mt-4">
+                Make sure your microphone is enabled for the best experience
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full p-3">
+                  <Phone className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">Live Interview</h1>
+                  <p className="text-muted-foreground">Have a natural conversation with our AI</p>
+                </div>
+              </div>
+              
+              <Button
+                onClick={handleEndRealtimeInterview}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <PhoneOff className="h-4 w-4" />
+                End Interview
+              </Button>
+            </div>
+
+            {/* Status Indicators */}
+            <div className="flex items-center gap-4 mb-6">
+              <Badge variant={isConnected ? "default" : "secondary"} className="flex items-center gap-1">
+                <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-gray-400")} />
+                {isConnected ? "Connected" : "Disconnected"}
+              </Badge>
+              
+              <Badge variant={isListening ? "default" : "secondary"} className="flex items-center gap-1">
+                {isListening ? <Mic className="h-3 w-3" /> : <MicOff className="h-3 w-3" />}
+                {isListening ? "Listening" : "Not Listening"}
+              </Badge>
+              
+              <Badge variant={isSpeaking ? "default" : "secondary"} className="flex items-center gap-1">
+                {isSpeaking ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
+                {isSpeaking ? "AI Speaking" : "AI Quiet"}
+              </Badge>
+
+              {profileUpdates.totalUpdates > 0 && (
+                <Badge variant="default" className="flex items-center gap-1 bg-green-100 text-green-800">
+                  <TrendingUp className="h-3 w-3" />
+                  {profileUpdates.totalUpdates} Profile Updates
+                </Badge>
+              )}
+            </div>
+
+            {/* Controls */}
+            <InterviewControls
+              isListening={isListening}
+              isSpeaking={isSpeaking}
+              isMuted={isMuted}
+              isPaused={isPaused}
+              onTogglePause={togglePause}
+              onToggleMute={toggleMute}
+              onRepeatQuestion={repeatLastQuestion}
+              isConnected={isConnected}
+            />
+
+            {/* Profile Updates Card */}
+            {profileUpdates.lastUpdate && (
+              <Card className="border-0 shadow-lg mb-6 bg-gradient-to-r from-green-50 to-blue-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">Profile Hub Updated!</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {profileUpdates.lastUpdate.experiences > 0 && (
+                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.experiences} Experience(s)</Badge>
+                    )}
+                    {profileUpdates.lastUpdate.skills > 0 && (
+                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.skills} Skill(s)</Badge>
+                    )}
+                    {profileUpdates.lastUpdate.education > 0 && (
+                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.education} Education(s)</Badge>
+                    )}
+                    {profileUpdates.lastUpdate.projects > 0 && (
+                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.projects} Project(s)</Badge>
+                    )}
+                    {profileUpdates.lastUpdate.achievements > 0 && (
+                      <Badge variant="outline" className="text-xs">{profileUpdates.lastUpdate.achievements} Achievement(s)</Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Conversation Display */}
+            <Card className="border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-blue-600" />
+                  Conversation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-96 pr-4">
+                  <div className="space-y-4">
+                    {realtimeMessages.length === 0 && (
+                      <div className="text-center text-muted-foreground py-8">
+                        <Bot className="h-12 w-12 mx-auto mb-4 text-blue-600" />
+                        <p>The AI interviewer will start the conversation shortly...</p>
+                      </div>
+                    )}
+                    
+                    {realtimeMessages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          "flex items-start gap-3 p-4 rounded-lg",
+                          message.role === 'user' 
+                            ? "bg-blue-50 ml-8" 
+                            : "bg-gray-50 mr-8"
+                        )}
+                      >
+                        <div className={cn(
+                          "rounded-full p-2 flex-shrink-0",
+                          message.role === 'user' 
+                            ? "bg-blue-600" 
+                            : "bg-gray-600"
+                        )}>
+                          {message.role === 'user' ? (
+                            <User className="h-4 w-4 text-white" />
+                          ) : (
+                            <Bot className="h-4 w-4 text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium">
+                              {message.role === 'user' ? 'You' : 'AI Interviewer'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {message.timestamp.toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <p className="text-foreground">{message.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Text and Enhanced mode UI
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold text-foreground">AI Interview</h1>
-              <span className="text-sm text-muted-foreground">
-                Question {currentQuestionIndex + 1} of {questions.length}
-              </span>
+              <h1 className="text-2xl font-bold text-foreground">
+                {mode === 'enhanced' ? 'Enhanced AI Interview' : 'AI Interview'}
+              </h1>
+              <div className="flex items-center gap-4">
+                {/* Mode Switcher */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleModeSwitch('text')}
+                    variant={mode === 'text' ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    Text
+                  </Button>
+                  <Button
+                    onClick={() => handleModeSwitch('enhanced')}
+                    variant={mode === 'enhanced' ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    Enhanced
+                  </Button>
+                  <Button
+                    onClick={() => handleModeSwitch('realtime')}
+                    variant={mode === 'realtime' ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    Voice
+                  </Button>
+                </div>
+                
+                {mode === 'enhanced' && (
+                  <Button
+                    onClick={() => {
+                      setIsVoiceModeEnabled(!isVoiceModeEnabled);
+                      if (isVoiceModeEnabled) {
+                        stop();
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className={isVoiceModeEnabled ? "bg-blue-100" : ""}
+                  >
+                    {isVoiceModeEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+                    Voice Mode
+                  </Button>
+                )}
+                
+                <span className="text-sm text-muted-foreground">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </span>
+              </div>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
@@ -280,6 +766,7 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
               <CardTitle className="flex items-center gap-2">
                 <Bot className="h-5 w-5 text-blue-600" />
                 AI Interviewer
+                {mode === 'enhanced' && isPlaying && <div className="animate-pulse w-2 h-2 bg-blue-600 rounded-full ml-2" />}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -289,9 +776,23 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
 
           <Card className="border-0 shadow-xl mb-6">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-indigo-600" />
-                Your Response
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-indigo-600" />
+                  Your Response
+                </div>
+                {mode === 'enhanced' && currentQuestion.type === 'textarea' && (
+                  <Button
+                    onClick={handleEnhanceAnswer}
+                    disabled={isEnhancing || !currentAnswer.trim()}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-1"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {isEnhancing ? 'Enhancing...' : 'Enhance'}
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -313,6 +814,74 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
             </CardContent>
           </Card>
 
+          {mode === 'enhanced' && !showVoiceChat && (
+            <div className="text-center mb-6">
+              <Button
+                onClick={() => setShowVoiceChat(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Bot className="h-4 w-4" />
+                Get AI Help with This Question
+              </Button>
+            </div>
+          )}
+
+          {mode === 'enhanced' && showVoiceChat && (
+            <Card className="border-0 shadow-xl mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>AI Career Assistant</span>
+                  <Button
+                    onClick={() => setShowVoiceChat(false)}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    ×
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {chatMessages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] p-3 rounded-lg ${
+                          message.role === 'user'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-900'
+                        }`}
+                      >
+                        {message.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ask for help with this question..."
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                        sendMessage(e.currentTarget.value);
+                        e.currentTarget.value = '';
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={() => clearMessages()}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex justify-between">
             <Button
               onClick={handlePrevious}
@@ -326,13 +895,11 @@ const Interview: React.FC<InterviewProps> = ({ onComplete, initialData }) => {
 
             <Button
               onClick={handleNext}
-              disabled={isLoading}
+              disabled={isEnhancing || isLoading}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2"
             >
-              {isLoading ? (
-                "Processing..."
-              ) : currentQuestionIndex === questions.length - 1 ? (
-                "Complete Interview"
+              {currentQuestionIndex === questions.length - 1 ? (
+                isLoading ? "Processing..." : "Complete Interview"
               ) : (
                 <>
                   Next

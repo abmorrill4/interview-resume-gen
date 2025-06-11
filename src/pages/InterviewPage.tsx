@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResumeStorage } from "@/hooks/useResumeStorage";
-import Interview from "@/components/Interview";
+import Interview, { InterviewMode } from "@/components/Interview";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -37,6 +37,7 @@ interface UserData {
 const InterviewPage: React.FC = () => {
   const navigate = useNavigate();
   const { saveResume } = useResumeStorage();
+  const [interviewMode, setInterviewMode] = useState<InterviewMode>('text');
   const [userData] = useState<UserData>({
     personalInfo: {
       fullName: '',
@@ -66,7 +67,9 @@ const InterviewPage: React.FC = () => {
   return (
     <Interview 
       onComplete={handleInterviewComplete} 
-      initialData={userData} 
+      initialData={userData}
+      mode={interviewMode}
+      onModeChange={setInterviewMode}
     />
   );
 };
