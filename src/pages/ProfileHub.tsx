@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +11,7 @@ import SkillsPage from '@/components/profile/SkillsPage';
 import EducationPage from '@/components/profile/EducationPage';
 import ProjectsPage from '@/components/profile/ProjectsPage';
 import AchievementsPage from '@/components/profile/AchievementsPage';
+import ProfileSnapshot from '@/components/ProfileSnapshot';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
