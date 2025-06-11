@@ -3,11 +3,14 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Circle, Brain, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CheckCircle2, Circle, Brain, Clock, ArrowRight } from 'lucide-react';
 import { useProfileData } from '@/hooks/useProfileData';
+import { useNavigate } from 'react-router-dom';
 
 const InterviewProgress: React.FC = () => {
   const { profileStats } = useProfileData();
+  const navigate = useNavigate();
 
   const interviewSections = [
     {
@@ -46,7 +49,7 @@ const InterviewProgress: React.FC = () => {
   const progressPercentage = (completedSections / interviewSections.length) * 100;
 
   return (
-    <Card>
+    <Card className="border-0 shadow-sm">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -59,9 +62,9 @@ const InterviewProgress: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium">Overall Progress</span>
               <span className="text-sm text-muted-foreground">{Math.round(progressPercentage)}%</span>
             </div>
@@ -70,14 +73,14 @@ const InterviewProgress: React.FC = () => {
           
           <div className="space-y-3">
             {interviewSections.map((section) => (
-              <div key={section.id} className="flex items-center justify-between">
+              <div key={section.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                 <div className="flex items-center gap-3">
                   {section.completed ? (
                     <CheckCircle2 className="h-5 w-5 text-green-500" />
                   ) : (
                     <Circle className="h-5 w-5 text-muted-foreground" />
                   )}
-                  <span className={`text-sm ${section.completed ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <span className={`text-sm ${section.completed ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                     {section.label}
                   </span>
                 </div>
@@ -90,15 +93,29 @@ const InterviewProgress: React.FC = () => {
             ))}
           </div>
 
-          {progressPercentage < 100 && (
-            <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-md">
+          {progressPercentage < 100 ? (
+            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-primary">Next Steps</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground">
                 Continue your AI interview to complete missing sections and unlock personalized insights.
               </p>
+              <Button 
+                size="sm" 
+                className="w-full gap-2"
+                onClick={() => navigate('/interview')}
+              >
+                Continue Interview
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+              <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
+              <p className="text-sm font-medium text-green-800">Interview Complete!</p>
+              <p className="text-xs text-green-600">All sections have been filled out.</p>
             </div>
           )}
         </div>

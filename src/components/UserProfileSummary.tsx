@@ -3,13 +3,16 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Briefcase, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MapPin, Briefcase, Target, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfileData } from '@/hooks/useProfileData';
+import { useNavigate } from 'react-router-dom';
 
 const UserProfileSummary: React.FC = () => {
   const { user } = useAuth();
   const { profileStats } = useProfileData();
+  const navigate = useNavigate();
 
   const getUserInitials = (name: string | null) => {
     if (!name) return 'U';
@@ -26,6 +29,18 @@ const UserProfileSummary: React.FC = () => {
     if (totalItems >= 8) return 'Advanced';
     if (totalItems >= 3) return 'Intermediate';
     return 'Beginner';
+  };
+
+  const calculateCompleteness = () => {
+    if (!profileStats) return 0;
+    const sections = [
+      profileStats.experienceCount > 0 ? 20 : 0,
+      profileStats.skillsCount > 0 ? 20 : 0,
+      profileStats.educationCount > 0 ? 20 : 0,
+      profileStats.projectsCount > 0 ? 20 : 0,
+      profileStats.achievementsCount > 0 ? 20 : 0
+    ];
+    return sections.reduce((sum, val) => sum + val, 0);
   };
 
   return (
@@ -52,7 +67,7 @@ const UserProfileSummary: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Briefcase className="h-4 w-4 text-primary" />
             <span className="text-sm text-muted-foreground">
@@ -65,7 +80,24 @@ const UserProfileSummary: React.FC = () => {
               Career goals not defined
             </span>
           </div>
-          <p className="text-sm text-muted-foreground mt-3 p-3 bg-background/50 rounded-md border">
+          
+          <div className="flex items-center justify-between p-3 bg-background/50 rounded-md border">
+            <div>
+              <p className="text-sm font-medium text-foreground">Profile Completeness</p>
+              <p className="text-xs text-muted-foreground">{calculateCompleteness()}% complete</p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/profile-hub')}
+              className="gap-2"
+            >
+              Manage Profile
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <p className="text-sm text-muted-foreground p-3 bg-background/50 rounded-md border">
             Complete your profile to get personalized career insights and recommendations. 
             Start with an AI interview to build your professional story.
           </p>
