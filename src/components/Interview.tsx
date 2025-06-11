@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, User, Sparkles, Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, TrendingUp } from "lucide-react";
+import { Bot, User, Sparkles, Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, TrendingUp, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEnhancedInterview } from "@/hooks/useEnhancedInterview";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
@@ -17,8 +17,10 @@ import ProgressBar from "./interview/ProgressBar";
 import Question from "./interview/Question";
 import Answer from "./interview/Answer";
 import Navigation from "./interview/Navigation";
+import DynamicInterview from "./DynamicInterview";
+import { InterviewResponse } from '@/types/InterviewTypes';
 
-export type InterviewMode = 'text' | 'enhanced' | 'realtime';
+export type InterviewMode = 'text' | 'enhanced' | 'realtime' | 'dynamic' | 'personalized';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -180,6 +182,47 @@ const Interview: React.FC<InterviewProps> = ({
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+
+  const handleDynamicInterviewComplete = (responses: InterviewResponse[]) => {
+    // Convert dynamic interview responses to UserData format
+    const processedData = processDynamicResponsesToUserData(responses);
+    const messages: Message[] = responses.map(response => ({
+      role: 'assistant' as const,
+      content: `Question: ${response.questionId}, Answer: ${response.value}`,
+      timestamp: response.timestamp
+    }));
+    
+    onComplete(processedData, messages);
+  };
+
+  const processDynamicResponsesToUserData = (responses: InterviewResponse[]): UserData => {
+    const responseMap = new Map(responses.map(r => [r.questionId, r.value]));
+    
+    return {
+      personalInfo: {
+        fullName: responseMap.get('fullName') || user?.user_metadata?.full_name || '',
+        email: responseMap.get('email') || user?.email || '',
+        phone: responseMap.get('phone') || '',
+        linkedin: responseMap.get('linkedin') || ''
+      },
+      workExperience: responseMap.get('work_experience_details') ? [{
+        jobTitle: "Position Title",
+        company: "Company Name", 
+        startDate: "Start Date",
+        endDate: "End Date",
+        responsibilities: [responseMap.get('work_experience_details')]
+      }] : [],
+      education: responseMap.get('education_background') ? [{
+        degree: "Degree",
+        field: "Field of Study",
+        university: "University Name",
+        graduationYear: "Graduation Year"
+      }] : [],
+      skills: responseMap.get('key_skills') ? 
+        String(responseMap.get('key_skills')).split(',').map(s => s.trim()).filter(Boolean) : [],
+      achievements: responseMap.get('career_aspirations') ? [responseMap.get('career_aspirations')] : []
+    };
+  };
 
   useEffect(() => {
     if (user && currentQuestionIndex === 0 && !answers.fullName) {
@@ -456,7 +499,7 @@ const Interview: React.FC<InterviewProps> = ({
 
   // Create separate render functions to avoid type narrowing issues
   const renderModeButtons = () => (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       <Button
         onClick={() => handleModeSwitch('text')}
         variant={mode === 'text' ? 'default' : 'outline'}
@@ -477,6 +520,24 @@ const Interview: React.FC<InterviewProps> = ({
         size="sm"
       >
         Voice
+      </Button>
+      <Button
+        onClick={() => handleModeSwitch('dynamic')}
+        variant={mode === 'dynamic' ? 'default' : 'outline'}
+        size="sm"
+        className="flex items-center gap-1"
+      >
+        <Zap className="h-3 w-3" />
+        Dynamic
+      </Button>
+      <Button
+        onClick={() => handleModeSwitch('personalized')}
+        variant={mode === 'personalized' ? 'default' : 'outline'}
+        size="sm"
+        className="flex items-center gap-1"
+      >
+        <Sparkles className="h-3 w-3" />
+        Personalized
       </Button>
     </div>
   );
@@ -836,7 +897,27 @@ const Interview: React.FC<InterviewProps> = ({
     return renderRealtimeInterview();
   }
 
+  if (mode === 'dynamic' || mode === 'personalized') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-3xl mx-auto mb-6">
+            <div className="flex justify-center">
+              {renderModeButtons()}
+            </div>
+          </div>
+        </div>
+        <DynamicInterview 
+          onComplete={handleDynamicInterviewComplete}
+          mode={mode === 'personalized' ? 'personalized' : 'dynamic'}
+        />
+      </div>
+    );
+  }
+
   return renderTextAndEnhancedMode();
 };
 
 export default Interview;
+
+}

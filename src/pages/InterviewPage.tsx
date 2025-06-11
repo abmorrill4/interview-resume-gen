@@ -37,7 +37,7 @@ interface UserData {
 const InterviewPage: React.FC = () => {
   const navigate = useNavigate();
   const { saveResume } = useResumeStorage();
-  const [interviewMode, setInterviewMode] = useState<InterviewMode>('text');
+  const [interviewMode, setInterviewMode] = useState<InterviewMode>('dynamic');
   const [userData] = useState<UserData>({
     personalInfo: {
       fullName: '',
