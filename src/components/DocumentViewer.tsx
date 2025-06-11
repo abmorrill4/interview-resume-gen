@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -167,8 +166,7 @@ Respond ONLY with valid JSON in this exact format:
       } else {
         toast({
           title: "No new data",
-          description: "No new information was found to add to your profile.",
-          variant: "outline"
+          description: "No new information was found to add to your profile."
         });
       }
 
@@ -200,7 +198,7 @@ Respond ONLY with valid JSON in this exact format:
       case 'failed':
         return <Badge variant="destructive" className="flex items-center gap-1"><AlertCircle className="h-3 w-3" />Failed</Badge>;
       default:
-        return <Badge variant="outline">Pending</Badge>;
+        return <Badge variant="secondary">Pending</Badge>;
     }
   };
 
@@ -375,7 +373,7 @@ Respond ONLY with valid JSON in this exact format:
                   <h3 className="font-semibold text-green-600 mb-2">Skills ({processedData.skills.length})</h3>
                   <div className="flex flex-wrap gap-2">
                     {processedData.skills.map((skill, index) => (
-                      <Badge key={index} variant="outline" className="bg-green-50">
+                      <Badge key={index} variant="secondary" className="bg-green-50">
                         {skill.name} ({skill.type})
                       </Badge>
                     ))}
