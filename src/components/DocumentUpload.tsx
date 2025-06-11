@@ -1,14 +1,17 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
-import { Upload, FileText, Download, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, AlertCircle, CheckCircle, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const DocumentUpload: React.FC = () => {
+interface DocumentUploadProps {
+  onDocumentSelect?: (documentId: string) => void;
+}
+
+const DocumentUpload: React.FC<DocumentUploadProps> = ({ onDocumentSelect }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -147,7 +150,6 @@ const DocumentUpload: React.FC = () => {
                   variant="outline"
                   onClick={() => {
                     fileInputRef.current?.click();
-                    // Note: In a real implementation, you'd need to distinguish between document types
                   }}
                   disabled={loading}
                 >
@@ -217,6 +219,15 @@ const DocumentUpload: React.FC = () => {
                   
                   <div className="flex items-center gap-2">
                     {getStatusBadge(doc.processing_status)}
+                    {onDocumentSelect && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDocumentSelect(doc.id)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

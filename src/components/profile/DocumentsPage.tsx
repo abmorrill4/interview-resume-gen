@@ -1,8 +1,20 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import DocumentUpload from '@/components/DocumentUpload';
+import DocumentViewer from '@/components/DocumentViewer';
 
 const DocumentsPage: React.FC = () => {
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+
+  if (selectedDocumentId) {
+    return (
+      <DocumentViewer
+        documentId={selectedDocumentId}
+        onBack={() => setSelectedDocumentId(null)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -14,7 +26,7 @@ const DocumentsPage: React.FC = () => {
         </div>
       </div>
 
-      <DocumentUpload />
+      <DocumentUpload onDocumentSelect={setSelectedDocumentId} />
     </div>
   );
 };

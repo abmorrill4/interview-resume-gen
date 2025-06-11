@@ -11,6 +11,7 @@ import SkillsPage from '@/components/profile/SkillsPage';
 import EducationPage from '@/components/profile/EducationPage';
 import ProjectsPage from '@/components/profile/ProjectsPage';
 import AchievementsPage from '@/components/profile/AchievementsPage';
+import DocumentsPage from '@/components/profile/DocumentsPage';
 import ProfileSnapshot from '@/components/ProfileSnapshot';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useNavigate } from 'react-router-dom';
@@ -44,59 +45,6 @@ const ProfileHub: React.FC = () => {
     ];
     return sections.reduce((sum, val) => sum + val, 0);
   };
-
-  // Update pages array to include Documents
-  const pages = [
-    {
-      id: 'overview',
-      label: 'Overview',
-      icon: User,
-      component: ProfileSnapshot,
-      description: 'Profile summary and quick stats'
-    },
-    {
-      id: 'experience',
-      label: 'Experience',
-      icon: Briefcase,
-      component: ExperiencePage,
-      description: 'Work history and professional experience'
-    },
-    {
-      id: 'skills',
-      label: 'Skills',
-      icon: Brain,
-      component: SkillsPage,
-      description: 'Technical and professional skills'
-    },
-    {
-      id: 'education',
-      label: 'Education',
-      icon: GraduationCap,
-      component: EducationPage,
-      description: 'Academic background and qualifications'
-    },
-    {
-      id: 'projects',
-      label: 'Projects',
-      icon: FolderOpen,
-      component: ProjectsPage,
-      description: 'Portfolio and project showcase'
-    },
-    {
-      id: 'achievements',
-      label: 'Achievements',
-      icon: Trophy,
-      component: AchievementsPage,
-      description: 'Awards, certifications, and accomplishments'
-    },
-    {
-      id: 'documents',
-      label: 'Documents',
-      icon: FileText,
-      component: React.lazy(() => import('@/components/profile/DocumentsPage')),
-      description: 'Upload and manage professional documents'
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -154,7 +102,7 @@ const ProfileHub: React.FC = () => {
 
           {/* Profile Sections */}
           <Tabs defaultValue="experience" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="experience" className="flex items-center gap-2">
                 <Briefcase className="h-4 w-4" />
                 Experience
@@ -174,6 +122,10 @@ const ProfileHub: React.FC = () => {
               <TabsTrigger value="achievements" className="flex items-center gap-2">
                 <Award className="h-4 w-4" />
                 Achievements
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Documents
               </TabsTrigger>
             </TabsList>
 
@@ -195,6 +147,10 @@ const ProfileHub: React.FC = () => {
             
             <TabsContent value="achievements">
               <AchievementsPage />
+            </TabsContent>
+
+            <TabsContent value="documents">
+              <DocumentsPage />
             </TabsContent>
           </Tabs>
         </div>
