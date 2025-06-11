@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { ArrowRight, ArrowLeft, Bot, User, Sparkles, Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, TrendingUp } from "lucide-react";
+import { Bot, User, Sparkles, Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEnhancedInterview } from "@/hooks/useEnhancedInterview";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
@@ -16,6 +13,10 @@ import { useRealtimeInterview } from "@/hooks/useRealtimeInterview";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import InterviewControls from "./InterviewControls";
+import ProgressBar from "./interview/ProgressBar";
+import Question from "./interview/Question";
+import Answer from "./interview/Answer";
+import Navigation from "./interview/Navigation";
 
 export type InterviewMode = 'text' | 'enhanced' | 'realtime';
 
@@ -56,7 +57,7 @@ interface InterviewProps {
   onModeChange?: (mode: InterviewMode) => void;
 }
 
-interface Question {
+interface QuestionData {
   id: string;
   text: string;
   type: 'text' | 'textarea' | 'list';
@@ -111,7 +112,7 @@ const Interview: React.FC<InterviewProps> = ({
     timestamp: string;
   }>>([]);
 
-  const questions: Question[] = [
+  const questions: QuestionData[] = [
     {
       id: 'fullName',
       text: "Let's start with the basics. What's your full name?",
@@ -723,67 +724,28 @@ const Interview: React.FC<InterviewProps> = ({
                     Voice Mode
                   </Button>
                 )}
-                
-                <span className="text-sm text-muted-foreground">
-                  Question {currentQuestionIndex + 1} of {questions.length}
-                </span>
               </div>
             </div>
-            <Progress value={progress} className="h-2" />
+            
+            <ProgressBar 
+              currentIndex={currentQuestionIndex} 
+              totalQuestions={questions.length} 
+            />
           </div>
 
-          <Card className="border-0 shadow-xl mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-blue-600" />
-                AI Interviewer
-                {mode === 'enhanced' && isPlaying && <div className="animate-pulse w-2 h-2 bg-blue-600 rounded-full ml-2" />}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-lg leading-relaxed">{currentQuestion.text}</p>
-            </CardContent>
-          </Card>
+          <Question 
+            question={currentQuestion} 
+            isPlaying={mode === 'enhanced' && isPlaying} 
+          />
 
-          <Card className="border-0 shadow-xl mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-indigo-600" />
-                  Your Response
-                </div>
-                {mode === 'enhanced' && currentQuestion.type === 'textarea' && (
-                  <Button
-                    onClick={handleEnhanceAnswer}
-                    disabled={isEnhancing || !currentAnswer.trim()}
-                    size="sm"
-                    variant="outline"
-                    className="flex items-center gap-1"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    {isEnhancing ? 'Enhancing...' : 'Enhance'}
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {currentQuestion.type === 'textarea' ? (
-                <Textarea
-                  value={currentAnswer}
-                  onChange={(e) => setCurrentAnswer(e.target.value)}
-                  placeholder="Type your answer here..."
-                  className="min-h-32 resize-none border-2 focus:border-blue-500"
-                />
-              ) : (
-                <Input
-                  value={currentAnswer}
-                  onChange={(e) => setCurrentAnswer(e.target.value)}
-                  placeholder="Type your answer here..."
-                  className="border-2 focus:border-blue-500"
-                />
-              )}
-            </CardContent>
-          </Card>
+          <Answer
+            question={currentQuestion}
+            answer={currentAnswer}
+            onAnswerChange={setCurrentAnswer}
+            onEnhance={handleEnhanceAnswer}
+            isEnhancing={isEnhancing}
+            showEnhanceButton={mode === 'enhanced'}
+          />
 
           {mode === 'enhanced' && !showVoiceChat && (
             <div className="text-center mb-6">
@@ -853,32 +815,14 @@ const Interview: React.FC<InterviewProps> = ({
             </Card>
           )}
 
-          <div className="flex justify-between">
-            <Button
-              onClick={handlePrevious}
-              variant="outline"
-              disabled={currentQuestionIndex === 0}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Previous
-            </Button>
-
-            <Button
-              onClick={handleNext}
-              disabled={isEnhancing || isLoading}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2"
-            >
-              {currentQuestionIndex === questions.length - 1 ? (
-                isLoading ? "Processing..." : "Complete Interview"
-              ) : (
-                <>
-                  Next
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </div>
+          <Navigation
+            currentIndex={currentQuestionIndex}
+            totalQuestions={questions.length}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+            canGoNext={!currentQuestion.required || currentAnswer.trim() !== ''}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     </div>
@@ -896,3 +840,5 @@ const Interview: React.FC<InterviewProps> = ({
 };
 
 export default Interview;
+
+}
