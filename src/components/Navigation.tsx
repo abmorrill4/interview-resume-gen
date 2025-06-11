@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User as UserIcon, Brain, FileText, Briefcase, Moon, Sun, Cpu } from "lucide-react";
+import { LogOut, User as UserIcon, Brain, FileText, Briefcase, Moon, Sun, Cpu, Network } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
 const Navigation: React.FC = () => {
@@ -18,9 +18,15 @@ const Navigation: React.FC = () => {
 
   const navigationItems = [
     {
+      label: 'Dashboard',
+      icon: Cpu,
+      onClick: () => navigate('/dashboard'),
+      description: 'Main dashboard'
+    },
+    {
       label: 'AI Interview',
       icon: Brain,
-      href: '#interview',
+      onClick: () => navigate('/interview'),
       description: 'Start AI-powered interview'
     },
     {
@@ -28,6 +34,12 @@ const Navigation: React.FC = () => {
       icon: Briefcase,
       onClick: () => navigate('/profile'),
       description: 'Manage your profile'
+    },
+    {
+      label: 'Knowledge Graph',
+      icon: Network,
+      onClick: () => navigate('/knowledge-graph'),
+      description: 'Explore connections'
     },
     {
       label: 'Resume Builder',
@@ -42,7 +54,7 @@ const Navigation: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
             <div className="bg-primary rounded-lg p-2">
               <Cpu className="h-6 w-6 text-primary-foreground" />
             </div>

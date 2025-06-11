@@ -2,22 +2,37 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, FileText, Briefcase, ArrowRight, Zap, Target, TrendingUp, Cpu, Database, BarChart3 } from "lucide-react";
+import { Brain, FileText, Briefcase, ArrowRight, Zap, Target, TrendingUp, Cpu, Database, BarChart3, Upload, CheckCircle2, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useProfileData } from "@/hooks/useProfileData";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 
-interface UserDashboardProps {
-  onStartInterview: () => void;
-}
-
-const UserDashboard: React.FC<UserDashboardProps> = ({ onStartInterview }) => {
+const UserDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { profileStats, fetchProfileStats } = useProfileData();
+
+  useEffect(() => {
+    if (user) {
+      fetchProfileStats();
+    }
+  }, [user, fetchProfileStats]);
+
+  // Check if user is new (has no profile data)
+  const isNewUser = profileStats && 
+    profileStats.experienceCount === 0 && 
+    profileStats.skillsCount === 0 && 
+    profileStats.educationCount === 0 && 
+    profileStats.projectsCount === 0 && 
+    profileStats.achievementsCount === 0;
 
   const quickActions = [
     {
       title: 'AI Interview',
       description: 'Get personalized career insights and recommendations',
       icon: Brain,
-      action: onStartInterview,
+      action: () => navigate('/interview'),
       primary: true,
       gradient: 'from-blue-500 to-cyan-400',
       glowColor: 'shadow-blue-500/25'
@@ -46,6 +61,30 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ onStartInterview }) => {
     { label: 'Interviews', value: '2.4K', icon: Cpu, trend: '+12%' },
     { label: 'Profiles', value: '89', icon: Database, trend: '+24%' },
     { label: 'Success Rate', value: '94.2%', icon: BarChart3, trend: '+8%' },
+  ];
+
+  const onboardingSteps = [
+    {
+      title: 'Upload your first document',
+      description: 'Upload your Resume, CV, or other professional documents',
+      icon: Upload,
+      action: () => navigate('/profile?tab=documents'),
+      completed: false
+    },
+    {
+      title: 'Let AI extract your profile information',
+      description: 'Process documents with AI to automatically populate your profile',
+      icon: Brain,
+      action: () => navigate('/profile?tab=documents'),
+      completed: false
+    },
+    {
+      title: 'Start your first AI-powered interview',
+      description: 'Have a conversation with our AI to enhance your profile',
+      icon: Play,
+      action: () => navigate('/interview'),
+      completed: false
+    }
   ];
 
   return (
@@ -125,34 +164,63 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ onStartInterview }) => {
             ))}
           </div>
 
-          {/* Activity Section */}
+          {/* Onboarding or Activity Section */}
           <Card className="bg-card border border-border">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <Target className="h-6 w-6 text-primary" />
-                <div>
-                  <CardTitle className="text-xl">Recent Activity</CardTitle>
-                  <CardDescription>Your career development progress</CardDescription>
-                </div>
+                {isNewUser ? (
+                  <>
+                    <Zap className="h-6 w-6 text-primary" />
+                    <div>
+                      <CardTitle className="text-xl">Welcome! Let's get you started</CardTitle>
+                      <CardDescription>Complete these steps to build your professional profile</CardDescription>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Target className="h-6 w-6 text-primary" />
+                    <div>
+                      <CardTitle className="text-xl">Recent Activity</CardTitle>
+                      <CardDescription>Your career development progress</CardDescription>
+                    </div>
+                  </>
+                )}
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-                  <Database className="h-8 w-8 text-primary" />
+              {isNewUser ? (
+                <div className="space-y-4">
+                  {onboardingSteps.map((step, index) => (
+                    <div key={index} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer" onClick={step.action}>
+                      <div className={`p-2 rounded-full ${step.completed ? 'bg-green-100 text-green-600' : 'bg-primary/10 text-primary'}`}>
+                        {step.completed ? <CheckCircle2 className="h-5 w-5" /> : <step.icon className="h-5 w-5" />}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-foreground">{step.title}</h3>
+                        <p className="text-sm text-muted-foreground">{step.description}</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  ))}
                 </div>
-                <p className="text-muted-foreground text-lg">No activity yet.</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Start your first interview to see your progress here.
-                </p>
-                <Button 
-                  className="mt-6"
-                  onClick={onStartInterview}
-                >
-                  Start Interview
-                  <Brain className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+                    <Database className="h-8 w-8 text-primary" />
+                  </div>
+                  <p className="text-muted-foreground text-lg">Great progress on your profile!</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Continue developing your career with more interviews and profile updates.
+                  </p>
+                  <Button 
+                    className="mt-6"
+                    onClick={() => navigate('/interview')}
+                  >
+                    Start Another Interview
+                    <Brain className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
