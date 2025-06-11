@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CareerOS Design System - Futuristic theme with dark mode support */
+/* CareerOS Design System - Clean and minimal theme with dark mode support */
 
 @layer base {
   :root {
@@ -35,7 +35,7 @@
     --input: 240 3.7% 15.9%;
     --ring: 200 98% 39%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -45,14 +45,6 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 200 98% 39%;
-
-    /* CareerOS specific colors */
-    --neo-blue: 200 98% 39%;
-    --neo-purple: 270 91% 65%;
-    --neo-green: 142 86% 28%;
-    --cyber-orange: 25 95% 53%;
-    --dark-surface: 240 10% 3.9%;
-    --dark-surface-alt: 240 3.7% 15.9%;
   }
 
   .light {
@@ -102,12 +94,11 @@
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Futuristic scrollbar */
+  /* Simple scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -115,92 +106,27 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary/50 rounded-full;
+    @apply bg-primary/30 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary/70;
+    @apply bg-primary/50;
   }
 
-  /* Glow effects */
-  .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  /* Simple gradient backgrounds */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
   }
 
-  .glow-neo-blue {
-    box-shadow: 0 0 20px hsl(var(--neo-blue) / 0.3);
-  }
-
-  .glow-neo-purple {
-    box-shadow: 0 0 20px hsl(var(--neo-purple) / 0.3);
-  }
-
-  /* Gradient backgrounds */
-  .bg-gradient-cyber {
-    background: linear-gradient(135deg, hsl(var(--neo-blue)), hsl(var(--neo-purple)));
-  }
-
-  .bg-gradient-career {
-    background: linear-gradient(135deg, hsl(var(--neo-blue)), hsl(var(--cyber-orange)));
-  }
-
-  /* Animations */
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-  }
-
-  .animate-pulse-glow {
-    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% {
-      box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
-    }
-    50% {
-      box-shadow: 0 0 30px hsl(var(--primary) / 0.6);
-    }
-  }
-
-  /* Grid pattern */
-  .grid-pattern {
-    background-image: 
-      linear-gradient(rgba(200, 200, 200, 0.1) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(200, 200, 200, 0.1) 1px, transparent 1px);
-    background-size: 20px 20px;
-  }
-
-  /* Futuristic card */
-  .card-futuristic {
-    @apply bg-card border border-border/50 backdrop-blur-sm;
-    background: linear-gradient(135deg, hsl(var(--card) / 0.8), hsl(var(--card) / 0.4));
-  }
-
-  /* Neon text */
-  .text-neon {
-    text-shadow: 0 0 10px currentColor;
+  /* Clean card style */
+  .card-clean {
+    @apply bg-card border border-border rounded-lg;
   }
 }
 
 @layer components {
-  .btn-cyber {
-    @apply relative overflow-hidden bg-gradient-to-r from-primary to-primary/80 text-primary-foreground;
-    @apply border border-primary/50 rounded-lg px-6 py-3 font-medium;
-    @apply transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/25;
-  }
-
-  .btn-cyber::before {
-    content: '';
-    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
-    @apply translate-x-[-100%] transition-transform duration-700;
-  }
-
-  .btn-cyber:hover::before {
-    @apply translate-x-[100%];
+  .btn-primary {
+    @apply bg-primary text-primary-foreground border border-primary/20 rounded-md px-4 py-2 font-medium;
+    @apply transition-colors duration-200 hover:bg-primary/90;
   }
 }
