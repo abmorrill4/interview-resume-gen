@@ -250,7 +250,7 @@ Respond ONLY with valid JSON in this exact format:
             </div>
             <div className="flex gap-2">
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={() => downloadDocument(document.file_path, document.file_name)}
                 className="flex items-center gap-2"
               >
@@ -259,7 +259,7 @@ Respond ONLY with valid JSON in this exact format:
               </Button>
               {!documentContent && (
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={loadDocumentContent}
                   disabled={loadingContent}
                   className="flex items-center gap-2"
@@ -405,7 +405,7 @@ Respond ONLY with valid JSON in this exact format:
                 <Button onClick={approveAndAddToProfile} className="flex-1">
                   Add All to Profile
                 </Button>
-                <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
+                <Button variant="secondary" onClick={() => setShowApprovalDialog(false)}>
                   Cancel
                 </Button>
               </div>
