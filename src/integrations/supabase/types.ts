@@ -9,156 +9,334 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      graph_nodes: {
+      achievements: {
         Row: {
-          created_at: string | null
-          external_id: string | null
+          date_achieved: string | null
+          description: string
+          experience_id: string | null
           id: string
-          node_type: string
-          properties: Json
-          updated_at: string | null
+          metric_unit: string | null
+          metric_value: number | null
+          project_id: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string | null
-          external_id?: string | null
+          date_achieved?: string | null
+          description: string
+          experience_id?: string | null
           id?: string
-          node_type: string
-          properties?: Json
-          updated_at?: string | null
+          metric_unit?: string | null
+          metric_value?: number | null
+          project_id?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string | null
-          external_id?: string | null
+          date_achieved?: string | null
+          description?: string
+          experience_id?: string | null
           id?: string
-          node_type?: string
-          properties?: Json
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      graph_relationships: {
-        Row: {
-          created_at: string | null
-          external_id: string | null
-          from_node_id: string
-          id: string
-          properties: Json
-          relationship_type: string
-          to_node_id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          external_id?: string | null
-          from_node_id: string
-          id?: string
-          properties?: Json
-          relationship_type: string
-          to_node_id: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          external_id?: string | null
-          from_node_id?: string
-          id?: string
-          properties?: Json
-          relationship_type?: string
-          to_node_id?: string
-          updated_at?: string | null
+          metric_unit?: string | null
+          metric_value?: number | null
+          project_id?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "graph_relationships_from_node_id_fkey"
-            columns: ["from_node_id"]
+            foreignKeyName: "achievements_experience_id_fkey"
+            columns: ["experience_id"]
             isOneToOne: false
-            referencedRelation: "graph_nodes"
+            referencedRelation: "experiences"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "graph_relationships_to_node_id_fkey"
-            columns: ["to_node_id"]
+            foreignKeyName: "achievements_project_id_fkey"
+            columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "graph_nodes"
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
       }
-      profiles: {
+      education: {
         Row: {
-          created_at: string
-          email: string | null
-          full_name: string | null
+          completion_date: string | null
+          degree_name: string
+          field_of_study: string
           id: string
-          linkedin: string | null
-          phone: string | null
-          updated_at: string
+          institution_name: string
+          user_id: string
         }
         Insert: {
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id: string
-          linkedin?: string | null
-          phone?: string | null
-          updated_at?: string
+          completion_date?: string | null
+          degree_name: string
+          field_of_study: string
+          id?: string
+          institution_name: string
+          user_id: string
         }
         Update: {
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
+          completion_date?: string | null
+          degree_name?: string
+          field_of_study?: string
           id?: string
-          linkedin?: string | null
-          phone?: string | null
-          updated_at?: string
+          institution_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experiences: {
+        Row: {
+          company_name: string
+          description: string | null
+          end_date: string | null
+          id: string
+          job_title: string
+          start_date: string
+          user_id: string
+        }
+        Insert: {
+          company_name: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          job_title: string
+          start_date: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          job_title?: string
+          start_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview_transcripts: {
+        Row: {
+          ai_extracted_json: Json | null
+          end_datetime: string | null
+          id: string
+          raw_transcript_text: string
+          start_datetime: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_extracted_json?: Json | null
+          end_datetime?: string | null
+          id?: string
+          raw_transcript_text: string
+          start_datetime?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_extracted_json?: Json | null
+          end_datetime?: string | null
+          id?: string
+          raw_transcript_text?: string
+          start_datetime?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_transcripts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_skills: {
+        Row: {
+          project_id: string
+          skill_id: string
+        }
+        Insert: {
+          project_id: string
+          skill_id: string
+        }
+        Update: {
+          project_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_skills_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          description: string | null
+          end_date: string | null
+          experience_id: string | null
+          id: string
+          project_name: string
+          start_date: string | null
+          user_id: string
+        }
+        Insert: {
+          description?: string | null
+          end_date?: string | null
+          experience_id?: string | null
+          id?: string
+          project_name: string
+          start_date?: string | null
+          user_id: string
+        }
+        Update: {
+          description?: string | null
+          end_date?: string | null
+          experience_id?: string | null
+          id?: string
+          project_name?: string
+          start_date?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          description: string | null
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          name: string
+          type?: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          name?: string
+          type?: string
         }
         Relationships: []
       }
-      resumes: {
+      user_skills: {
         Row: {
-          achievements: string[] | null
-          created_at: string
-          education: Json | null
-          id: string
-          interview_transcript: Json | null
-          personal_info: Json | null
-          skills: string[] | null
-          title: string
-          updated_at: string
+          proficiency_level: string | null
+          skill_id: string
           user_id: string
-          work_experience: Json | null
+          years_of_experience: number | null
         }
         Insert: {
-          achievements?: string[] | null
-          created_at?: string
-          education?: Json | null
-          id?: string
-          interview_transcript?: Json | null
-          personal_info?: Json | null
-          skills?: string[] | null
-          title?: string
-          updated_at?: string
+          proficiency_level?: string | null
+          skill_id: string
           user_id: string
-          work_experience?: Json | null
+          years_of_experience?: number | null
         }
         Update: {
-          achievements?: string[] | null
-          created_at?: string
-          education?: Json | null
-          id?: string
-          interview_transcript?: Json | null
-          personal_info?: Json | null
-          skills?: string[] | null
-          title?: string
-          updated_at?: string
+          proficiency_level?: string | null
+          skill_id?: string
           user_id?: string
-          work_experience?: Json | null
+          years_of_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_skills_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          career_goals_summary: string | null
+          date_created: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          last_updated: string | null
+          linkedin_profile_url: string | null
+          location: string | null
+          professional_headline: string | null
+        }
+        Insert: {
+          career_goals_summary?: string | null
+          date_created?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          last_updated?: string | null
+          linkedin_profile_url?: string | null
+          location?: string | null
+          professional_headline?: string | null
+        }
+        Update: {
+          career_goals_summary?: string | null
+          date_created?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_updated?: string | null
+          linkedin_profile_url?: string | null
+          location?: string | null
+          professional_headline?: string | null
         }
         Relationships: []
       }

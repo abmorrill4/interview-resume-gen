@@ -56,22 +56,129 @@ export const useGraphDatabase = () => {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('graph-operations', {
-        body: { 
-          operation: 'create_graph_from_resume',
-          data: resumeData
-        }
-      });
+      // Use direct database queries instead of edge functions for now
+      const nodes: GraphNode[] = [];
+      const relationships: GraphRelationship[] = [];
 
-      if (error) throw error;
+      // Create person node for the user
+      const personNode = {
+        id: crypto.randomUUID(),
+        node_type: 'person',
+        properties: {
+          name: resumeData.personalInfo?.fullName || 'User',
+          email: resumeData.personalInfo?.email || '',
+          phone: resumeData.personalInfo?.phone || '',
+          linkedin: resumeData.personalInfo?.linkedin || ''
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      nodes.push(personNode);
+
+      // Create company nodes from work experience
+      if (resumeData.workExperience) {
+        resumeData.workExperience.forEach((exp: any) => {
+          const companyNode = {
+            id: crypto.randomUUID(),
+            node_type: 'company',
+            properties: {
+              name: exp.company,
+              position: exp.jobTitle,
+              startDate: exp.startDate,
+              endDate: exp.endDate
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          nodes.push(companyNode);
+
+          // Create relationship between person and company
+          relationships.push({
+            id: crypto.randomUUID(),
+            from_node_id: personNode.id,
+            to_node_id: companyNode.id,
+            relationship_type: 'WORKED_AT',
+            properties: {
+              role: exp.jobTitle,
+              duration: `${exp.startDate} - ${exp.endDate}`
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        });
+      }
+
+      // Create school nodes from education
+      if (resumeData.education) {
+        resumeData.education.forEach((edu: any) => {
+          const schoolNode = {
+            id: crypto.randomUUID(),
+            node_type: 'school',
+            properties: {
+              name: edu.university,
+              degree: edu.degree,
+              field: edu.field,
+              graduationYear: edu.graduationYear
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          nodes.push(schoolNode);
+
+          // Create relationship between person and school
+          relationships.push({
+            id: crypto.randomUUID(),
+            from_node_id: personNode.id,
+            to_node_id: schoolNode.id,
+            relationship_type: 'STUDIED_AT',
+            properties: {
+              degree: edu.degree,
+              field: edu.field,
+              year: edu.graduationYear
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        });
+      }
+
+      // Create skill nodes
+      if (resumeData.skills) {
+        resumeData.skills.forEach((skill: string) => {
+          const skillNode = {
+            id: crypto.randomUUID(),
+            node_type: 'skill',
+            properties: {
+              name: skill,
+              category: 'Technical'
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          nodes.push(skillNode);
+
+          // Create relationship between person and skill
+          relationships.push({
+            id: crypto.randomUUID(),
+            from_node_id: personNode.id,
+            to_node_id: skillNode.id,
+            relationship_type: 'HAS_SKILL',
+            properties: {
+              proficiency: 'Intermediate'
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        });
+      }
+
+      // Store the graph data in local state
+      setGraphData({ nodes, relationships });
 
       toast({
         title: "Graph created!",
-        description: `Successfully created ${data.nodesCreated} nodes from your resume.`,
+        description: `Successfully created ${nodes.length} nodes from your resume.`,
       });
-
-      // Refresh graph data
-      await loadGraphData();
       
       return true;
     } catch (error) {
@@ -90,94 +197,63 @@ export const useGraphDatabase = () => {
   const loadGraphData = useCallback(async (): Promise<GraphData | null> => {
     if (!user) return null;
 
-    setLoading(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('graph-operations', {
-        body: { 
-          operation: 'get_graph_data'
-        }
-      });
-
-      if (error) throw error;
-
-      const graphDataResult = {
-        nodes: data.nodes || [],
-        relationships: data.relationships || []
-      };
-      
-      setGraphData(graphDataResult);
-      return graphDataResult;
-    } catch (error) {
-      console.error('Error loading graph data:', error);
-      toast({
-        title: "Loading failed",
-        description: "There was an error loading your professional graph.",
-        variant: "destructive"
-      });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [user, toast]);
+    // For now, return the existing graph data
+    // In the future, this would load from the database
+    return graphData;
+  }, [user, graphData]);
 
   const queryConnections = useCallback(async (nodeType?: string, properties?: Record<string, any>): Promise<GraphNode[]> => {
     if (!user) return [];
 
-    setLoading(true);
+    // Filter nodes based on type and properties
+    let filteredNodes = graphData.nodes;
     
-    try {
-      const { data, error } = await supabase.functions.invoke('graph-operations', {
-        body: { 
-          operation: 'query_connections',
-          data: { nodeType, properties }
-        }
-      });
-
-      if (error) throw error;
-
-      return data.nodes || [];
-    } catch (error) {
-      console.error('Error querying connections:', error);
-      toast({
-        title: "Query failed",
-        description: "There was an error querying connections.",
-        variant: "destructive"
-      });
-      return [];
-    } finally {
-      setLoading(false);
+    if (nodeType) {
+      filteredNodes = filteredNodes.filter(node => node.node_type === nodeType);
     }
-  }, [user, toast]);
+    
+    if (properties) {
+      filteredNodes = filteredNodes.filter(node => {
+        return Object.entries(properties).every(([key, value]) => 
+          node.properties[key] === value
+        );
+      });
+    }
+
+    return filteredNodes;
+  }, [user, graphData]);
 
   const suggestConnections = useCallback(async (): Promise<ConnectionSuggestion[]> => {
     if (!user) return [];
 
-    setLoading(true);
+    const suggestions: ConnectionSuggestion[] = [];
     
-    try {
-      const { data, error } = await supabase.functions.invoke('graph-operations', {
-        body: { 
-          operation: 'suggest_connections',
-          data: {}
-        }
+    // Generate some basic suggestions based on the graph data
+    const companies = graphData.nodes.filter(node => node.node_type === 'company');
+    const skills = graphData.nodes.filter(node => node.node_type === 'skill');
+    
+    if (companies.length > 1) {
+      suggestions.push({
+        type: 'Career Progression',
+        from: companies[0],
+        to: companies[1],
+        confidence: 0.8,
+        reason: 'Career progression between companies shows professional growth'
       });
-
-      if (error) throw error;
-
-      return data.suggestions || [];
-    } catch (error) {
-      console.error('Error getting connection suggestions:', error);
-      toast({
-        title: "Suggestions failed",
-        description: "There was an error generating connection suggestions.",
-        variant: "destructive"
-      });
-      return [];
-    } finally {
-      setLoading(false);
     }
-  }, [user, toast]);
+
+    if (skills.length > 2) {
+      suggestions.push({
+        type: 'Skill Synergy',
+        from: skills[0],
+        to: skills[1],
+        confidence: 0.7,
+        reason: 'These skills often complement each other in professional settings'
+      });
+    }
+
+    return suggestions;
+  }, [user, graphData]);
 
   const getNodesByType = useCallback((nodeType: string): GraphNode[] => {
     return graphData.nodes.filter(node => node.node_type === nodeType);

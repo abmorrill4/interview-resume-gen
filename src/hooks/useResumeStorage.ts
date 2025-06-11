@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,7 +31,7 @@ interface UserData {
 
 interface Resume {
   id: string;
-  title: string;
+  user_id: string;
   personal_info: any;
   work_experience: any;
   education: any;
@@ -61,17 +62,28 @@ export const useResumeStorage = () => {
     setLoading(true);
     
     try {
+      // Insert into interview_transcripts table since that's what exists in the schema
       const { data, error } = await supabase
-        .from('resumes')
+        .from('interview_transcripts')
         .insert({
           user_id: user.id,
-          title: `Resume - ${new Date().toLocaleDateString()}`,
-          personal_info: userData.personalInfo,
-          work_experience: userData.workExperience,
-          education: userData.education,
-          skills: userData.skills,
-          achievements: userData.achievements,
-          interview_transcript: interviewTranscript
+          raw_transcript_text: JSON.stringify({
+            personalInfo: userData.personalInfo,
+            workExperience: userData.workExperience,
+            education: userData.education,
+            skills: userData.skills,
+            achievements: userData.achievements
+          }),
+          ai_extracted_json: {
+            personalInfo: userData.personalInfo,
+            workExperience: userData.workExperience,
+            education: userData.education,
+            skills: userData.skills,
+            achievements: userData.achievements,
+            interviewTranscript: interviewTranscript
+          },
+          start_datetime: new Date().toISOString(),
+          end_datetime: new Date().toISOString()
         })
         .select()
         .single();
@@ -107,14 +119,28 @@ export const useResumeStorage = () => {
     
     try {
       const { data, error } = await supabase
-        .from('resumes')
+        .from('interview_transcripts')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('start_datetime', { ascending: false });
 
       if (error) throw error;
 
-      setResumes(data || []);
+      // Transform the data to match the Resume interface
+      const transformedResumes: Resume[] = (data || []).map(transcript => ({
+        id: transcript.id,
+        user_id: transcript.user_id,
+        personal_info: transcript.ai_extracted_json?.personalInfo || {},
+        work_experience: transcript.ai_extracted_json?.workExperience || [],
+        education: transcript.ai_extracted_json?.education || [],
+        skills: transcript.ai_extracted_json?.skills || [],
+        achievements: transcript.ai_extracted_json?.achievements || [],
+        interview_transcript: transcript.ai_extracted_json?.interviewTranscript || {},
+        created_at: transcript.start_datetime || '',
+        updated_at: transcript.end_datetime || ''
+      }));
+
+      setResumes(transformedResumes);
     } catch (error) {
       console.error('Error loading resumes:', error);
       toast({
@@ -134,7 +160,7 @@ export const useResumeStorage = () => {
     
     try {
       const { error } = await supabase
-        .from('resumes')
+        .from('interview_transcripts')
         .delete()
         .eq('id', resumeId)
         .eq('user_id', user.id);
