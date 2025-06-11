@@ -112,16 +112,6 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-primary/50;
   }
-
-  /* Simple gradient backgrounds */
-  .bg-gradient-primary {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
-  }
-
-  /* Clean card style */
-  .card-clean {
-    @apply bg-card border border-border rounded-lg;
-  }
 }
 
 @layer components {
