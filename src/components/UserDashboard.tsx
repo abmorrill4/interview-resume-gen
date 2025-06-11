@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import WelcomeOnboarding from "./WelcomeOnboarding";
 import UserProfileSummary from "./UserProfileSummary";
 import InterviewProgress from "./InterviewProgress";
 import CareerInsights from "./CareerInsights";
+import { Container, Stack, Text, Surface, Grid } from "@/components/ui/design-system";
 
 const UserDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -80,25 +80,42 @@ const UserDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
+      <Container maxWidth="7xl" padding="xl">
+        <Stack gap="6xl">
           {/* Welcome Section */}
-          <div className="mb-12 text-center slide-up">
-            <div className="inline-flex items-center gap-2 bg-gradient-primary rounded-full px-6 py-3 mb-8 hover:scale-105 transition-transform duration-300">
-              <Sparkles className="h-5 w-5 text-white animate-pulse" />
-              <span className="text-sm font-semibold text-white">AI-Powered Career Platform</span>
-              <Zap className="h-4 w-4 text-white" />
-            </div>
-            <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 text-gradient animate-gradient text-shadow">
+          <Stack align="center" gap="xl" className="slide-up">
+            <Surface variant="ghost" padding="lg" radius="full" className="bg-gradient-primary hover:scale-105 transition-transform duration-300">
+              <Stack direction="row" gap="sm" align="center">
+                <Sparkles className="h-5 w-5 text-white animate-pulse" />
+                <Text size="sm" weight="semibold" className="text-white">AI-Powered Career Platform</Text>
+                <Zap className="h-4 w-4 text-white" />
+              </Stack>
+            </Surface>
+            
+            <Text 
+              as="h1" 
+              size="6xl" 
+              weight="bold" 
+              variant="gradient" 
+              family="display" 
+              align="center"
+              className="animate-gradient text-shadow"
+            >
               Welcome to CareerOS
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            </Text>
+            
+            <Text 
+              size="xl" 
+              variant="muted" 
+              align="center" 
+              className="max-w-3xl leading-relaxed"
+            >
               Transform your career journey with AI-powered insights, dynamic interviews, and personalized guidance designed to unlock your full potential.
-            </p>
-          </div>
+            </Text>
+          </Stack>
 
           {/* Main Dashboard Grid */}
-          <div className="grid lg:grid-cols-3 gap-8 mb-12">
+          <Grid responsive={{ lg: 2, xl: 3 }} gap="xl">
             {/* Left Column - Profile and Progress */}
             <div className="lg:col-span-2 space-y-8">
               {/* User Profile Summary */}
@@ -112,7 +129,7 @@ const UserDashboard: React.FC = () => {
               </div>
               
               {/* System Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Grid responsive={{ sm: 1, md: 3 }} gap="lg">
                 {systemStats.map((stat, index) => (
                   <Card 
                     key={stat.label} 
@@ -120,35 +137,35 @@ const UserDashboard: React.FC = () => {
                     style={{ animationDelay: `${0.4 + index * 0.1}s` }}
                   >
                     <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground font-medium mb-1">{stat.label}</p>
-                          <p className="text-2xl font-bold text-foreground mb-2">{stat.value}</p>
-                          <div className="flex items-center gap-2">
+                      <Stack direction="row" justify="between" align="center">
+                        <Stack gap="sm">
+                          <Text size="sm" variant="muted" weight="medium">{stat.label}</Text>
+                          <Text size="2xl" weight="bold">{stat.value}</Text>
+                          <Stack direction="row" gap="sm" align="center">
                             <TrendingUp className="h-4 w-4 text-neon-green" />
-                            <span className="text-sm font-semibold text-neon-green">{stat.trend}</span>
-                          </div>
-                        </div>
-                        <div className="p-3 bg-gradient-primary rounded-xl floating">
+                            <Text size="sm" weight="semibold" className="text-neon-green">{stat.trend}</Text>
+                          </Stack>
+                        </Stack>
+                        <Surface variant="ghost" padding="md" radius="xl" className="bg-gradient-primary floating">
                           <stat.icon className="h-6 w-6 text-white" />
-                        </div>
-                      </div>
+                        </Surface>
+                      </Stack>
                     </CardContent>
                   </Card>
                 ))}
-              </div>
+              </Grid>
             </div>
 
             {/* Right Column - Career Insights */}
-            <div className="space-y-8">
+            <Stack gap="xl">
               <div className="fade-in-up" style={{ animationDelay: '0.6s' }}>
                 <CareerInsights />
               </div>
-            </div>
-          </div>
+            </Stack>
+          </Grid>
 
           {/* Quick Actions Grid */}
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <Grid responsive={{ sm: 1, md: 3 }} gap="xl">
             {quickActions.map((action, index) => (
               <Card 
                 key={action.title}
@@ -160,15 +177,29 @@ const UserDashboard: React.FC = () => {
                      style={{background: `linear-gradient(135deg, ${action.gradient.split(' ')[1]}, ${action.gradient.split(' ')[3]})`}} />
                 
                 <CardHeader className="text-center pb-4 relative z-10">
-                  <div className={`mx-auto mb-6 p-4 rounded-2xl w-fit ${action.bgClass} animate-gradient group-hover:scale-110 transition-transform duration-300`}>
-                    <action.icon className="h-8 w-8 text-white" />
-                  </div>
-                  <CardTitle className="text-xl font-display font-bold text-foreground group-hover:text-gradient transition-all duration-300">
-                    {action.title}
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground leading-relaxed">
-                    {action.description}
-                  </CardDescription>
+                  <Stack align="center" gap="lg">
+                    <Surface 
+                      variant="ghost" 
+                      padding="lg" 
+                      radius="2xl" 
+                      className={`${action.bgClass} animate-gradient group-hover:scale-110 transition-transform duration-300`}
+                    >
+                      <action.icon className="h-8 w-8 text-white" />
+                    </Surface>
+                    <Stack gap="sm" align="center">
+                      <Text 
+                        size="xl" 
+                        weight="bold" 
+                        family="display" 
+                        className="group-hover:text-gradient transition-all duration-300"
+                      >
+                        {action.title}
+                      </Text>
+                      <Text variant="muted" align="center" className="leading-relaxed">
+                        {action.description}
+                      </Text>
+                    </Stack>
+                  </Stack>
                 </CardHeader>
                 <CardContent className="pt-0 relative z-10">
                   <Button 
@@ -185,7 +216,7 @@ const UserDashboard: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </Grid>
 
           {/* Onboarding or Activity Section */}
           <div className="fade-in-up" style={{ animationDelay: '1.2s' }}>
@@ -198,25 +229,32 @@ const UserDashboard: React.FC = () => {
               <Card className="card-glow border-0 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-accent opacity-5" />
                 <CardHeader className="relative z-10">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-gradient-primary rounded-xl">
+                  <Stack direction="row" gap="lg" align="center">
+                    <Surface variant="ghost" padding="md" radius="xl" className="bg-gradient-primary">
                       <Target className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl font-display">Recent Activity</CardTitle>
-                      <CardDescription className="text-lg">Your career development progress</CardDescription>
-                    </div>
-                  </div>
+                    </Surface>
+                    <Stack gap="xs">
+                      <Text size="2xl" weight="bold" family="display">Recent Activity</Text>
+                      <Text size="lg" variant="muted">Your career development progress</Text>
+                    </Stack>
+                  </Stack>
                 </CardHeader>
                 <CardContent className="p-8 relative z-10">
-                  <div className="text-center py-16">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-secondary rounded-full mb-6 pulse-glow">
+                  <Stack align="center" gap="xl" className="py-16">
+                    <Surface 
+                      variant="ghost" 
+                      padding="xl" 
+                      radius="full" 
+                      className="bg-gradient-secondary pulse-glow"
+                    >
                       <Rocket className="h-10 w-10 text-white" />
-                    </div>
-                    <h3 className="text-2xl font-display font-bold text-foreground mb-4">Amazing Progress!</h3>
-                    <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-                      You're making great strides in your career development. Keep the momentum going!
-                    </p>
+                    </Surface>
+                    <Stack gap="lg" align="center">
+                      <Text size="2xl" weight="bold" family="display">Amazing Progress!</Text>
+                      <Text variant="muted" size="lg" align="center" className="max-w-md">
+                        You're making great strides in your career development. Keep the momentum going!
+                      </Text>
+                    </Stack>
                     <Button 
                       className="btn-primary text-lg px-8 py-4"
                       onClick={() => navigate('/interview')}
@@ -224,16 +262,15 @@ const UserDashboard: React.FC = () => {
                       Continue Your Journey
                       <Brain className="h-5 w-5 ml-2" />
                     </Button>
-                  </div>
+                  </Stack>
                 </CardContent>
               </Card>
             )}
           </div>
-        </div>
-      </div>
+        </Stack>
+      </Container>
     </div>
   );
 };
 
 export default UserDashboard;
-
