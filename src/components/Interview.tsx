@@ -663,5 +663,3 @@ const Interview: React.FC<InterviewProps> = ({
 };
 
 export default Interview;
-
-}
